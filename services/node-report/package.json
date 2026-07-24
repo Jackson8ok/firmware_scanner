@@ -1,0 +1,16 @@
+{
+  "name": "firmware-scanner-report-service",
+  "version": "1.0.0",
+  "description": "Node.js 报告生成服务 (Word/PPT)",
+  "main": "report-service.js",
+  "scripts": {
+    "start": "node report-service.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "docx": "^8.5.0",
+    "pptxgenjs": "^3.12.0",
+    "cors": "^2.8.5",
+    "fs-extra": "^11.2.0"
+  }
+}

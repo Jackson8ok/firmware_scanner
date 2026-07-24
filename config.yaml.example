@@ -1,0 +1,174 @@
+# PokeClaw 固件漏洞扫描平台 - 配置示例
+# 
+# 复制此文件为 config.yaml 并根据需要修改
+# cp config.yaml.example config.yaml
+
+server:
+  host: "0.0.0.0"
+  port: 8000
+  debug: false
+  workers: 4
+  
+  # CORS 配置（开发环境可设为 "*"）
+  cors_origins:
+    - "http://localhost:3000"
+    - "http://127.0.0.1:3000"
+
+database:
+  type: "sqlite"
+  path: "./data/vulndb.sqlite"
+  
+  # PostgreSQL 配置（可选）
+  # postgresql_url: "postgresql://user:password@localhost:5432/pokeclaw"
+
+scanning:
+  # 最大并发任务数
+  max_concurrent_tasks: 3
+  
+  # 单次扫描超时（秒）
+  timeout: 300
+  
+  # 支持的固件类型
+  supported_formats:
+    - squasfs
+    - cramfs
+    - jffs2
+    - ubifs
+    - iso
+    - tar
+    - zip
+    - bin
+    - hex
+    
+  # 提取工具路径
+  tools:
+    binwalk: "/usr/bin/binwalk"
+    sevenzip: "/usr/bin/7z"
+    unsquashfs: "/usr/bin/unsquashfs"
+
+paths:
+  uploads: "./data/scans"
+  reports: "./data/reports"
+  logs: "./logs"
+  
+  # Grype 数据库路径
+  grype_db: "/path/to/grype-db/vulnerability.db"
+
+# R155 合规检查配置
+r155:
+  enabled: true
+  
+  # 规则权重配置
+  rule_weights:
+    CM.01: 1.0   # 供应链管理
+    CM.02: 1.5   # 漏洞管理
+    SEC.01: 2.0  # 加密保护
+    AUTH.01: 2.5 # 身份认证
+    SEC.02: 3.0  # 安全启动
+    MON.01: 1.0  # 日志审计
+    INT.01: 2.5  # 完整性校验
+    
+  # CVSS 阈值
+  cvss_thresholds:
+    critical: 9.0
+    high: 7.0
+    medium: 4.0
+    low: 0.0
+    
+  # 修复时限（天）
+  remediation_deadlines:
+    critical: 60
+    high: 90
+    medium: 120
+    low: 200
+
+# EPSS 评分配置
+epss:
+  enabled: true
+  cache_path: "./data/epss_cache.json"
+  update_interval: "daily"  # 数据更新频率
+  source_url: "https://epss.cyentia.com/epss_scores-current.csv.gz"
+
+# SBOM 生成配置
+sbom:
+  enabled: true
+  format: "cyclonedx"  # cyclonedx, spdx
+  include_licenses: true
+  include_hashes: true
+  
+# API 限流配置（使用令牌桶算法）
+rate_limiting:
+  enabled: true
+  requests_per_minute: 60
+  burst_size: 10
+  
+  # 白名单 IP
+  whitelist:
+    - "127.0.0.1"
+    - "10.0.0.0/8"
+
+# 日志配置
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  
+  # 日志文件
+  file: "./logs/app.log"
+  max_bytes: 10485760  # 10MB
+  backup_count: 3
+  
+  # 控制台输出
+  console: true
+
+# 认证配置（可选，用于企业版）
+auth:
+  enabled: false
+  method: "jwt"  # jwt, basic, oauth2
+  
+  jwt:
+    secret_key: "your-super-secret-key-here"
+    algorithm: "HS256"
+    access_token_expire_minutes: 30
+    
+  # OAuth2 配置
+  oauth2:
+    provider: "google"  # google, github, azure
+    client_id: ""
+    client_secret: ""
+    redirect_uri: "http://localhost:8000/auth/callback"
+
+# 通知配置（Webhook）
+notifications:
+  webhooks:
+    - url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+      events:
+        - scan_complete
+        - compliance_violation
+        - error_occurred
+    
+  email:
+    smtp_server: "smtp.example.com"
+    smtp_port: 587
+    username: ""
+    password: ""
+    from_address: "scanner@pokeclaw.io"
+    recipients:
+      - "admin@example.com"
+
+# 性能优化配置
+performance:
+  # 启用 Redis 缓存（可选）
+  redis_enabled: false
+  redis_url: "redis://localhost:6379/0"
+  
+  # 结果缓存过期时间（秒）
+  cache_ttl: 3600
+  
+  # 批量处理大小
+  batch_size: 100
+
+# 实验性功能（可能会在后续版本中变更）
+experimental:
+  ai_assistance: false
+  auto_remediation: false
+  threat_intelligence: false
