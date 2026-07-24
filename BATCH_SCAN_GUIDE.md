@@ -328,6 +328,6 @@ chmod +x test_batch_scan.sh
 
 ---
 
-**作者**: PokeClaw Team  
+**作者**: 玄武 Team  
 **版本**: 2.1-alpha  
 **许可证**: MIT

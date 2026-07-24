@@ -365,7 +365,7 @@ gzip_types text/css application/javascript;
 
 ---
 
-**作者**: PokeClaw Team  
+**作者**: 玄武 Team  
 **版本**: 2.2-alpha  
 **最后更新**: 2026-07-22  
 **许可证**: MIT

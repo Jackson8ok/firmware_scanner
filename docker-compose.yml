@@ -1,6 +1,6 @@
 version: '3.8'
 
-# PokeClaw 固件漏洞扫描平台 - Docker Compose 配置
+# 玄武 固件漏洞扫描平台 - Docker Compose 配置
 # 
 # 快速启动：docker compose up -d
 # 停止服务：docker compose down
@@ -15,7 +15,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: production  # 使用生产环境镜像
-    container_name: pokeclaw-scanner
+    container_name: xuanwu-scanner
     restart: unless-stopped
     
     ports:
@@ -77,7 +77,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: development
-    container_name: pokeclaw-scanner-dev
+    container_name: xuanwu-scanner-dev
     profiles: ["dev"]  # 仅在指定 profile 时启动
     
     ports:

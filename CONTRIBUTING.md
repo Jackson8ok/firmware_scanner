@@ -1,6 +1,6 @@
 # 🤝 贡献指南
 
-首先，感谢你愿意为 PokeClaw 固件漏洞扫描平台贡献力量！🙏
+首先，感谢你愿意为 玄武 固件漏洞扫描平台贡献力量！🙏
 
 我们欢迎任何形式的贡献，包括 bug 修复、功能开发、文档改进、翻译等。无论你是新手还是资深开发者，都欢迎参与！
 
@@ -463,7 +463,7 @@ A: 查看标记为 [`good first issue`](https://github.com/pokeclaw/scanner/issu
 
 ---
 
-**感谢所有为 PokeClaw 做出贡献的人！** ❤️
+**感谢所有为 玄武 做出贡献的人！** ❤️
 
 <a href="https://github.com/pokeclaw/scanner/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=pokeclaw/scanner" />

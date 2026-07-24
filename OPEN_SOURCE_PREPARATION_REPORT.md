@@ -1,7 +1,7 @@
 # 🎉 开源准备工作完成报告
 
 **日期**: 2026-07-24  
-**项目**: PokeClaw 固件漏洞扫描平台  
+**项目**: 玄武 固件漏洞扫描平台  
 **状态**: ✅ 100% 完成  
 
 ---
@@ -90,7 +90,7 @@ git commit -m "chore: 初始化项目 - 准备好开源"
 # https://github.com/new → 名称：scanner → 公开
 
 # 关联远程仓库
-git remote add origin git@github.com:pokeclaw/scanner.git
+git remote add origin git@github.com:Jackson8ok/firmware_scanner.git
 git branch -M main
 git push -u origin main
 ```
@@ -110,14 +110,14 @@ git push origin v1.0.0-alpha
 
 生成 Star History 图表：
 ```
-https://api.star-history.com/svg?repos=pokeclaw/scanner&type=Date
+https://api.star-history.com/svg?repos=Jackson8ok/firmware_scanner&type=Date
 ```
 
 添加 badges 到 README：
 ```markdown
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Release](https://img.shields.io/github/v/release/pokeclaw/scanner)
-![Stars](https://img.shields.io/github/stars/pokeclaw/scanner?style=social)
+![Release](https://img.shields.io/github/v/release/Jackson8ok/firmware_scanner)
+![Stars](https://img.shields.io/github/stars/Jackson8ok/firmware_scanner?style=social)
 ```
 
 #### 4. 准备演示资源
@@ -148,7 +148,7 @@ frontend/static/images/demo/
 #### 6. 创建社区渠道
 
 - [ ] Discord 服务器（或 Telegram 群组）
-- [ ] Twitter/X 账号 (@PokeClawIO)
+- [ ] Twitter/X 账号 (@玄武IO)
 - [ ] GitHub Discussions 启用
 - [ ] GitHub Projects 看板
 
@@ -306,7 +306,7 @@ frontend/static/images/demo/
 感谢以下人员的支持：
 
 - **Mewtwo Master** - 核心架构与开发
-- **PokeClaw Team** - 持续贡献
+- **玄武 Team** - 持续贡献
 - **Early Adopters** - 提供宝贵反馈
 
 特别鸣谢：
@@ -319,9 +319,9 @@ frontend/static/images/demo/
 ## 📞 联系我们
 
 - **Email**: contact@pokeclaw.io
-- **GitHub**: https://github.com/pokeclaw/scanner
+- **GitHub**: https://github.com/Jackson8ok/firmware_scanner
 - **Discord**: [加入服务器链接]
-- **Twitter**: @PokeClawIO
+- **Twitter**: @玄武IO
 
 ---
 
@@ -329,4 +329,4 @@ frontend/static/images/demo/
 **版本**: 1.0.0-alpha  
 **许可证**: MIT
 
-🦞 **PokeClaw Team** - 让固件安全变得简单
+🦞 **玄武 Team** - 让固件安全变得简单

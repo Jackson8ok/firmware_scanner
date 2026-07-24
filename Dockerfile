@@ -29,7 +29,7 @@ RUN wget -qO- https://raw.githubusercontent.com/anchore/grype/main/install.sh | 
 # ============================================
 FROM python:3.10-slim AS production
 
-LABEL maintainer="PokeClaw Team <contact@pokeclaw.io>"
+LABEL maintainer="玄武 Team <contact@pokeclaw.io>"
 LABEL org.opencontainers.image.source="https://github.com/pokeclaw/scanner"
 LABEL org.opencontainers.image.description="固件漏洞扫描平台 - R155 合规检查"
 LABEL org.opencontainers.image.licenses="MIT"

@@ -201,5 +201,5 @@ git log --oneline --graph --all
 ---
 
 **最后更新**: 2026-07-24  
-**维护者**: PokeClaw Team  
+**维护者**: 玄武 Team  
 **许可证**: MIT

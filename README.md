@@ -1,4 +1,4 @@
-# 🦞 PokeClaw - 固件漏洞扫描平台
+# 🦞 玄武 - 固件漏洞扫描平台
 
 <div align="center">
 
@@ -6,7 +6,7 @@
 ![Python](https://img.shields.io/badge/python-3.8+-green.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.111+-blue.svg)
 ![R155](https://img.shields.io/badge/R155-Compliant-brightgreen.svg)
-[![Stars](https://img.shields.io/github/stars/pokeclaw/scanner?style=social)](https://github.com/pokeclaw/scanner/stargazers)
+[![Stars](https://img.shields.io/github/stars/Jackson8ok/firmware_scanner?style=social)](https://github.com/Jackson8ok/firmware_scanner/stargazers)
 
 **欧盟 R155/R156 合规自动化 · 汽车固件安全分析 · SBOM生成**
 
@@ -18,7 +18,7 @@
 
 ## 🎯 项目简介
 
-PokeClaw 是一个**开源的固件安全分析平台**，专注于：
+玄武 是一个**开源的固件安全分析平台**，专注于：
 
 - ✅ **自动化 CVE 检测** - 集成 NVD + Grype 数据库
 - ✅ **R155 合规检查** - 符合欧盟 UNECE R155/R156法规
@@ -37,7 +37,7 @@ PokeClaw 是一个**开源的固件安全分析平台**，专注于：
 
 ```bash
 # 克隆仓库
-git clone https://github.com/pokeclaw/scanner.git
+git clone https://github.com/Jackson8ok/firmware_scanner.git
 cd scanner
 
 # 启动服务
@@ -55,7 +55,7 @@ docker run -d \
   --name pokeclaw \
   -p 8000:8000 \
   -v ./data:/app/data \
-  ghcr.io/pokeclaw/scanner:latest
+  ghcr.io/Jackson8ok/firmware_scanner:latest
   
 docker exec -it pokeclaw tail -f logs/app.log
 ```
@@ -306,8 +306,8 @@ git push origin feature/amazing-feature
 ### 社区
 
 - 💬 [Discord 服务器](https://discord.gg/pokeclaw) - 实时讨论
-- 🐛 [GitHub Issues](https://github.com/pokeclaw/scanner/issues) - 报告问题
-- ✨ [Feature Requests](https://github.com/pokeclaw/scanner/discussions) - 建议功能
+- 🐛 [GitHub Issues](https://github.com/Jackson8ok/firmware_scanner/issues) - 报告问题
+- ✨ [Feature Requests](https://github.com/Jackson8ok/firmware_scanner/discussions) - 建议功能
 
 ### 学习材料
 
@@ -320,10 +320,10 @@ git push origin feature/amazing-feature
 
 ## 📊 当前状态
 
-![GitHub stars](https://img.shields.io/github/stars/pokeclaw/scanner?style=social)
-![GitHub forks](https://img.shields.io/github/forks/pokeclaw/scanner?style=social)
-![GitHub issues](https://img.shields.io/github/issues/pokeclaw/scanner)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/pokeclaw/scanner)
+![GitHub stars](https://img.shields.io/github/stars/Jackson8ok/firmware_scanner?style=social)
+![GitHub forks](https://img.shields.io/github/forks/Jackson8ok/firmware_scanner?style=social)
+![GitHub issues](https://img.shields.io/github/issues/Jackson8ok/firmware_scanner)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/Jackson8ok/firmware_scanner)
 
 **里程碑达成:**
 
@@ -380,6 +380,6 @@ git push origin feature/amazing-feature
 
 ---
 
-**Made with ❤️ by the PokeClaw Team**
+**Made with ❤️ by the 玄武 Team**
 
-[![Star History Chart](https://api.star-history.com/svg?repos=pokeclaw/scanner&type=Date)](https://star-history.com/#pokeclaw/scanner&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=Jackson8ok/firmware_scanner&type=Date)](https://star-history.com/#Jackson8ok/firmware_scanner&Date)

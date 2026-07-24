@@ -1,6 +1,6 @@
 # 🔒 安全政策
 
-感谢您对 PokeClaw 安全的关注！我们非常重视安全问题，并承诺快速响应和处理。
+感谢您对 玄武 安全的关注！我们非常重视安全问题，并承诺快速响应和处理。
 
 ---
 
@@ -78,7 +78,7 @@ x.y.修订版本 → Bug 修复和安全补丁
 - 📧 GitHub Security Advisories
 - 📰 [GitHub Releases](https://github.com/pokeclaw/scanner/releases)
 - 💬 Discord 安全频道
-- 🐦 Twitter (@PokeClawIO)
+- 🐦 Twitter (@玄武IO)
 
 ### CVE 编号
 
@@ -187,7 +187,7 @@ cronjob: "0 * * * * curl -s http://localhost:8000/health | grep -q OK || send_al
 
 ## 📜 许可与条款
 
-通过向 PokeClaw 报告安全漏洞，您同意：
+通过向 玄武 报告安全漏洞，您同意：
 
 1. 遵守本安全政策
 2. 在得到明确授权前，不进行进一步测试
@@ -219,4 +219,4 @@ cronjob: "0 * * * * curl -s http://localhost:8000/health | grep -q OK || send_al
 
 **最后更新**: 2026-07-24  
 **文档版本**: 1.0  
-**维护者**: PokeClaw Security Team
+**维护者**: 玄武 Security Team
