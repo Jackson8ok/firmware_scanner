@@ -567,6 +567,32 @@ async def generate_excel_report(firmware_id: str = Form(...)):
     return FileResponse(report_path, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename=f"{firmware_id}_report.xlsx")
 
 
+from report_generator.pdf_generator import generate_pdf_report
+
+
+@app.post("/api/report/pdf")
+async def generate_pdf_report(firmware_id: str = Form(...)):
+    """生成 PDF 报告"""
+    if firmware_id not in scan_results_store:
+        raise HTTPException(status_code=404, detail="扫描结果不存在")
+    
+    result = scan_results_store[firmware_id].get('result')
+    if not result:
+        raise HTTPException(status_code=404, detail="扫描尚未完成")
+    
+    try:
+        # 使用本地 PDF 生成器
+        pdf_path = generate_pdf_report(firmware_id, result)
+        return FileResponse(
+            pdf_path, 
+            media_type='application/pdf', 
+            filename=f"{firmware_id}_security_report.pdf"
+        )
+    except Exception as e:
+        logger.error(f"PDF 报告生成失败：{e}")
+        raise HTTPException(status_code=500, detail=f"PDF 报告生成失败：{str(e)}")
+
+
 @app.post("/api/report/word")
 async def generate_word_report(firmware_id: str = Form(...)):
     """生成 Word 报告 (调用 Node.js 服务)"""

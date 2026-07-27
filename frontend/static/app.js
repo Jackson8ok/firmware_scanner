@@ -703,22 +703,97 @@ function drawNoDataText(ctx, width, height, text) {
     ctx.fillText(text, width / 2, height / 2);
 }
 
-// 导出按钮
-document.getElementById('exportBtn')?.addEventListener('click', async () => {
+// PDF 和 Excel 导出按钮事件
+document.getElementById('exportPdfBtn')?.addEventListener('click', async () => {
     if (!currentScanId) {
         alert('请先进行扫描');
         return;
     }
     
-    const format = prompt('选择导出格式：yaml / excel / pdf', 'excel');
-    if (!format) return;
+    const btn = document.getElementById('exportPdfBtn');
+    const originalText = btn.textContent;
+    btn.textContent = '⏳ 生成中...';
+    btn.disabled = true;
     
     try {
-        if (format === 'excel') {
-            await exportExcel();
-        } else if (format === 'pdf') {
-            await exportPDF();
+        // 调用 PDF 导出 API
+        const formData = new FormData();
+        formData.append('firmware_id', currentScanId);
+        
+        const response = await fetch('/api/report/pdf', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            // 下载 PDF 文件
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `xuanwu_scan_report_${currentScanId}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            alert('✅ PDF 报告已生成并开始下载！');
         } else {
+            const error = await response.json();
+            alert(`❌ PDF 生成失败：${error.detail || '未知错误'}`);
+        }
+    } catch (error) {
+        console.error('PDF 生成错误:', error);
+        alert(`❌ PDF 生成失败：${error.message}`);
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
+});
+
+document.getElementById('exportExcelBtn')?.addEventListener('click', async () => {
+    if (!currentScanId) {
+        alert('请先进行扫描');
+        return;
+    }
+    
+    const btn = document.getElementById('exportExcelBtn');
+    const originalText = btn.textContent;
+    btn.textContent = '⏳ 生成中...';
+    btn.disabled = true;
+    
+    try {
+        const formData = new FormData();
+        formData.append('firmware_id', currentScanId);
+        
+        const response = await fetch('/api/report/excel', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `xuanwu_scan_report_${currentScanId}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            alert('✅ Excel 报告已生成并开始下载！');
+        } else {
+            alert('❌ Excel 生成失败');
+        }
+    } catch (error) {
+        console.error('Excel 生成错误:', error);
+        alert(`❌ Excel 生成失败：${error.message}`);
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
+});
             let endpoint = `/api/reports/${currentScanId}`;
             
             const response = await fetch(endpoint);
