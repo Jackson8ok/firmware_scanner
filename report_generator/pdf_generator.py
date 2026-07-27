@@ -104,7 +104,7 @@ class PDFReportGenerator:
         self,
         task_id: str,
         scan_result: Dict,
-        include_charts: bool = True
+        include_charts: bool = False  # 默认关闭图表，避免字体问题
     ) -> str:
         """
         生成完整的 PDF 报告
@@ -259,7 +259,15 @@ class PDFReportGenerator:
         
         # R155 合规状态
         compliance_score = scan_result.get('compliance_score', 0)
-        violations = len(scan_result.get('violating_cves', []))
+        violating_cves = scan_result.get('violating_cves', [])
+        
+        # 兼容列表和数字两种格式
+        if isinstance(violating_cves, list):
+            violations = len(violating_cves)
+        elif isinstance(violating_cves, (int, float)):
+            violations = int(violating_cves)
+        else:
+            violations = 0
         
         if compliance_score >= 80:
             status_text = "✅ 基本符合 R155 要求"
@@ -404,23 +412,36 @@ class PDFReportGenerator:
     def _create_pie_chart(self, data: Dict) -> Optional[str]:
         """创建饼图"""
         try:
+            # 设置中文字体（避免乱码）
+            import matplotlib.pyplot as plt
+            from matplotlib import rcParams
+            
+            # 尝试使用中文字体
+            try:
+                rcParams['font.family'] = 'sans-serif'
+                rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial Unicode MS', 'SimHei', 'WenQuanYi Micro Hei']
+                rcParams['axes.unicode_minus'] = False
+            except:
+                pass
+            
             labels = list(data.keys())[:5]  # 最多 5 个分类
             values = [data[l] for l in labels]
             
-            plt.figure(figsize=(6, 6))
+            fig, ax = plt.subplots(figsize=(6, 6))
             colors_map = ['#4caf50', '#ff9800', '#f44336', '#2196f3', '#9c27b0']
-            wedges, texts, autotexts = plt.pie(
+            wedges, texts, autotexts = ax.pie(
                 values, 
                 labels=labels, 
                 autopct='%1.1f%%',
                 colors=colors_map[:len(labels)]
             )
-            plt.title('R155 分类得分分布', fontsize=12)
+            ax.set_title('R155 分类得分分布', fontsize=12)
             plt.tight_layout()
             
-            temp_path = str(self.output_dir / f"pie_chart_{datetime.now().timestamp()}.png")
+            # 使用绝对路径
+            temp_path = str((self.output_dir / f"pie_chart_{datetime.now().timestamp()}.png").resolve())
             plt.savefig(temp_path, dpi=150, bbox_inches='tight')
-            plt.close()
+            plt.close(fig)
             
             return temp_path
         except Exception as e:
@@ -430,6 +451,18 @@ class PDFReportGenerator:
     def _create_radar_chart(self, data: Dict) -> Optional[str]:
         """创建雷达图"""
         try:
+            import numpy as np
+            import matplotlib.pyplot as plt
+            from matplotlib import rcParams
+            
+            # 尝试使用中文字体
+            try:
+                rcParams['font.family'] = 'sans-serif'
+                rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial Unicode MS', 'SimHei', 'WenQuanYi Micro Hei']
+                rcParams['axes.unicode_minus'] = False
+            except:
+                pass
+            
             categories = list(data.keys())
             values = list(data.values())
             
@@ -446,9 +479,10 @@ class PDFReportGenerator:
             ax.set_title('R155 能力雷达图', fontsize=12, pad=20)
             plt.tight_layout()
             
-            temp_path = str(self.output_dir / f"radar_chart_{datetime.now().timestamp()}.png")
+            # 使用绝对路径
+            temp_path = str((self.output_dir / f"radar_chart_{datetime.now().timestamp()}.png").resolve())
             plt.savefig(temp_path, dpi=150, bbox_inches='tight')
-            plt.close()
+            plt.close(fig)
             
             return temp_path
         except Exception as e:
