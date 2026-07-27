@@ -305,7 +305,7 @@ frontend/static/images/demo/
 
 感谢以下人员的支持：
 
-- **Mewtwo Master** - 核心架构与开发
+- **攻城狮阿信** - 核心架构与开发
 - **玄武 Team** - 持续贡献
 - **Early Adopters** - 提供宝贵反馈
 
@@ -329,4 +329,4 @@ frontend/static/images/demo/
 **版本**: 1.0.0-alpha  
 **许可证**: MIT
 
-🦞 **玄武 Team** - 让固件安全变得简单
+🐢 **玄武 Team** - 让固件安全变得简单

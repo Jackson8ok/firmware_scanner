@@ -1,4 +1,4 @@
-# 🦞 玄武 - 固件漏洞扫描平台
+# 🐢 玄武 - 固件漏洞扫描平台
 
 <div align="center">
 
@@ -373,7 +373,7 @@ git push origin feature/amazing-feature
 
 ## 📞 联系方式
 
-- 项目负责人：Mewtwo Master
+- 项目负责人：攻城狮阿信
 - Email: contact@pokeclaw.io
 - 网站：https://pokeclaw.io
 - 地址：中国·上海

@@ -16,7 +16,7 @@
 1. **访问**: https://github.com/new
 2. **填写信息**:
    - Repository name: `scanner` (或 `pokeclaw-scanner`)
-   - Description: `🦞 固件漏洞扫描平台 - R155/R156合规检查`
+   - Description: `🐢 固件漏洞扫描平台 - R155/R156合规检查`
    - Visibility: **Public** (公开)
    - ⚠️ **不要勾选** "Initialize with README" 等选项
 3. **点击**: "Create repository"
@@ -80,7 +80,7 @@ cat ~/.ssh/id_ed25519.pub
 **填写内容**:
 - Tag version: `v1.0.0-alpha`
 - Target: `main`
-- Title: `Alpha Release 🦞 - 开源首发版`
+- Title: `Alpha Release 🐢 - 开源首发版`
 - Description: 复制下方模板
 
 **Release 描述模板**:
@@ -123,7 +123,7 @@ open http://localhost:8000
 
 ### 🙏 感谢
 
-早期贡献者: Mewtwo Master & 玄武 Team
+早期贡献者: 攻城狮阿信 & 玄武 Team
 
 ---
 **Made with ❤️ by 玄武 Team**
