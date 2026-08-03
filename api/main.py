@@ -29,8 +29,46 @@ logger = logging.getLogger(__name__)
 
 # 加载配置
 config_path = Path(__file__).parent.parent / "config.yaml"
-with open(config_path) as f:
+with open(config_path, encoding='utf-8') as f:
     config = yaml.safe_load(f)
+
+# 处理环境变量占位符 (如 ${GRYPE_DB_PATH:~/.local/share/grype/grype.db})
+def resolve_env_var(value):
+    """解析环境变量占位符"""
+    if not isinstance(value, str):
+        return value
+    
+    import re
+    pattern = r'\$\{([^}:]+)(?::(.+))?\}'
+    match = re.match(pattern, value)
+    
+    if match:
+        env_name = match.group(1)
+        default_value = match.group(2)
+        return os.environ.get(env_name, default_value or '')
+    
+    return value
+
+# 递归处理配置中的所有字符串值
+def process_config_values(cfg):
+    """递归处理配置中的环境变量"""
+    if isinstance(cfg, dict):
+        return {k: process_config_values(v) for k, v in cfg.items()}
+    elif isinstance(cfg, list):
+        return [process_config_values(item) for item in cfg]
+    else:
+        return resolve_env_var(cfg)
+
+config = process_config_values(config)
+
+# 展开 ~ 符号为家目录
+if 'paths' in config:
+    for key in config['paths']:
+        path_val = config['paths'][key]
+        if isinstance(path_val, str) and path_val.startswith('~'):
+            config['paths'][key] = str(Path(path_val).expanduser())
+
+logger.info(f"Grype DB 路径：{config['paths'].get('grype_db', '未配置')}")
 
 app = FastAPI(title="固件漏洞扫描平台", version="2.1-alpha")
 
@@ -131,7 +169,7 @@ async def upload_firmware(file: UploadFile = File(...)):
             content = await file.read()
             buffer.write(content)
         
-        firmware_id = file.stem
+        firmware_id = Path(file.filename).stem
         scan_results_store[firmware_id] = {
             'path': str(file_path),
             'filename': file.filename,

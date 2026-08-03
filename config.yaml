@@ -11,8 +11,8 @@ queue:
   cleanup_days: 7    # 自动清理旧任务的保留天数（天）
 
 paths:
-  # Grype SQLite 数据库路径 (~2GB)
-  grype_db: "/path/to/grype.db"
+  # Grype SQLite 数据库路径 (~2GB) - 可通过环境变量 GRYPE_DB_PATH 覆盖
+  grype_db: "${GRYPE_DB_PATH:~/.local/share/grype/grype.db}"
   # 固件上传目录
   uploads: "./uploads"
   # 解包工作目录（Binwalk + 备用方案）

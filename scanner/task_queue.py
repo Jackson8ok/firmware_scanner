@@ -51,8 +51,8 @@ import traceback
 
 # 导入扫描引擎和合规检查器
 from .engine import FirmwareExtractor, SBOMGenerator, CVEMatcher
-from ..compliance.r155_rules import check_r155_compliance
 from .r155_compliance import get_r155_checker
+from compliance.r155_rules import check_r155_compliance
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -445,7 +445,13 @@ class ScanQueue:
                 scan_time=datetime.now().isoformat()
             )
             
-            update_progress("r155_compliance", 90, f"合规得分：{compliance_result.overall_score:.1f}/100")
+            # 确保 compliance_result 是 dict 格式 (统一数据格式)
+            if hasattr(compliance_result, 'to_dict'):
+                compliance_dict = compliance_result.to_dict()
+            else:
+                compliance_dict = compliance_result
+            
+            update_progress("r155_compliance", 90, f"合规得分：{compliance_dict.get('overall_score', 0):.1f}/100")
             
             # ========== 阶段 5: 汇总结果 (进度 95-100%)
             update_progress("finalizing", 95, "正在生成报告")
@@ -464,7 +470,7 @@ class ScanQueue:
                     'fixed_version': getattr(v, 'fixed_version', None)
                 })
             
-            # R155 合规检查
+            # R155 合规检查 (备用方案)
             try:
                 r155_report = check_r155_compliance(vuln_data_for_compliance)
             except Exception as e:
@@ -479,7 +485,7 @@ class ScanQueue:
             # 计算每个 CVE 的 R155 合规状态
             violating_cves = {v['cve_id'] for v in r155_report.get('violations', [])}
             
-            # 构建结果对象
+            # 构建结果对象 - r155_compliance 字段使用统一的 dict 格式
             result = {
                 'firmware_id': task.task_id,
                 'filename': task.filename,
@@ -500,7 +506,7 @@ class ScanQueue:
                     'description': v.description[:200],
                     'r155_non_compliant': v.cve_id in violating_cves
                 } for v in sorted(vulnerabilities, key=lambda x: x.priority_score or 0, reverse=True)],
-                'r155_compliance': r155_report,
+                'r155_compliance': compliance_dict,  # 使用统一的 dict 格式
                 'scan_time': datetime.now().isoformat()
             }
             
