@@ -8,11 +8,14 @@ import re
 import subprocess
 import hashlib
 import sqlite3
+import shutil
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional, NamedTuple
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import logging
+
+from .tool_detector import get_detector
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -124,29 +127,28 @@ class FirmwareExtractor:
     def __init__(self, work_dir: str):
         self.work_dir = Path(work_dir)
         self.work_dir.mkdir(parents=True, exist_ok=True)
-        self.binwalk_available = self._check_binwalk()
-        self.sevenzip_available = self._check_7zip()
         
-        logger.info(f"Binwalk 可用性：{'✅' if self.binwalk_available else '❌'}")
-        logger.info(f"7-Zip 可用性：{'✅' if self.sevenzip_available else '❌'}")
+        # 使用新的跨平台工具检测器
+        detector = get_detector()
+        tools = detector.detect_all_tools()
+        
+        self.binwalk_available = tools['binwalk']['available']
+        self.sevenzip_available = tools['7zip']['available']
+        self.unsquashfs_available = tools['unsquashfs']['available']
+        self.objcopy_available = tools['objcopy']['available']
+        
+        logger.info(f"Binwalk: {'✅' if self.binwalk_available else '❌'} {tools['binwalk'].get('version', 'N/A')}")
+        logger.info(f"7-Zip: {'✅' if self.sevenzip_available else '❌'} {tools['7zip'].get('version', 'N/A')}")
+        logger.info(f"unsquashfs: {'✅' if self.unsquashfs_available else '❌'}")
+        logger.info(f"objcopy: {'✅' if self.objcopy_available else '❌'}")
     
     def _check_binwalk(self) -> bool:
-        """检查 Binwalk 是否可用"""
-        try:
-            result = subprocess.run(['binwalk', '--version'], 
-                                  capture_output=True, text=True)
-            return result.returncode == 0
-        except FileNotFoundError:
-            return False
+        """检查 Binwalk 是否可用（已弃用，保留兼容）"""
+        return self.binwalk_available
     
     def _check_7zip(self) -> bool:
-        """检查 7-Zip 是否可用"""
-        try:
-            result = subprocess.run(['7z', '--help'], 
-                                  capture_output=True, text=True)
-            return result.returncode == 0
-        except FileNotFoundError:
-            return False
+        """检查 7-Zip 是否可用（已弃用，保留兼容）"""
+        return self.sevenzip_available
     
     def scan_firmware(self, firmware_path: str) -> List[ExtractedFile]:
         """扫描固件，识别内部结构（不提取）"""

@@ -22,9 +22,21 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from scanner.engine import FirmwareExtractor, SBOMGenerator, CVEMatcher, Vulnerability
 from scanner.task_queue import get_scan_queue, ScanTask, TaskStatus, ScanQueue
+from scanner.logging_config import setup_logging, log_audit
+from api.error_handler import (
+    app_exception_handler, http_exception_handler, generic_exception_handler,
+    AppException, ErrorCode, ErrorResponse
+)
 import yaml
 
-logging.basicConfig(level=logging.INFO)
+# 初始化日志系统（优先于任何其他日志）
+setup_logging(
+    log_dir="./logs",
+    console_level=logging.INFO,
+    file_level=logging.WARNING,
+    max_bytes=10*1024*1024,  # 10MB
+    backup_count=5
+)
 logger = logging.getLogger(__name__)
 
 # 加载配置
@@ -71,6 +83,11 @@ if 'paths' in config:
 logger.info(f"Grype DB 路径：{config['paths'].get('grype_db', '未配置')}")
 
 app = FastAPI(title="固件漏洞扫描平台", version="2.1-alpha")
+
+# 注册异常处理器
+app.add_exception_handler(AppException, app_exception_handler)
+app.add_exception_handler(HTTPException, http_exception_handler)
+app.add_exception_handler(Exception, generic_exception_handler)
 
 # 模板和静态文件
 templates_path = Path(__file__).parent.parent / "frontend" / "templates"
@@ -163,10 +180,25 @@ async def dashboard_page(request: Request):
 async def upload_firmware(file: UploadFile = File(...)):
     """上传固件文件"""
     try:
-        file_path = Path(config['paths']['uploads']) / file.filename
+        # 验证文件大小（假设限制 500MB）
+        MAX_SIZE = config.get('limits', {}).get('max_file_size_mb', 500) * 1024 * 1024
         
+        # 读取文件内容
+        content = await file.read()
+        
+        if len(content) > MAX_SIZE:
+            log_audit(f"⚠️ 上传拒绝：{file.filename} ({len(content)/1024/1024:.1f}MB > {MAX_SIZE/1024/1024:.0f}MB)")
+            raise AppException(
+                code=ErrorCode.FILE_TOO_LARGE,
+                message=f"文件大小超过限制 ({config.get('limits', {}).get('max_file_size_mb', 500)}MB)",
+                details=f"{file.filename}: {len(content)/1024/1024:.1f}MB",
+                suggestion="请使用小于限制的固件文件",
+                status_code=413
+            )
+        
+        # 保存文件
+        file_path = Path(config['paths']['uploads']) / file.filename
         with open(file_path, "wb") as buffer:
-            content = await file.read()
             buffer.write(content)
         
         firmware_id = Path(file.filename).stem
@@ -177,15 +209,27 @@ async def upload_firmware(file: UploadFile = File(...)):
             'status': 'uploaded'
         }
         
+        log_audit(f"✅ 上传成功：{firmware_id} - {file.filename}")
+        
         return {
             "success": True,
             "firmware_id": firmware_id,
             "message": f"固件已上传：{file.filename}",
-            "path": str(file_path)
+            "path": str(file_path),
+            "size_mb": round(len(content) / 1024 / 1024, 2)
         }
+        
+    except AppException:
+        # 自定义异常直接抛出
+        raise
     except Exception as e:
-        logger.error(f"上传失败：{e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"上传失败：{e}", exc_info=True)
+        raise AppException(
+            code=ErrorCode.FILE_UPLOAD_FAILED,
+            message="文件上传失败",
+            details=str(e),
+            suggestion="请检查文件格式或联系技术支持"
+        )
 
 
 @app.post("/api/scan")
