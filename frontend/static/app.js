@@ -1,12 +1,14 @@
 /**
- * 固件漏洞扫描平台 - 前端逻辑（v2.2 - Dashboard 增强版）
- * 支持批量扫描、任务队列监控、高级图表和筛选
+ * 固件漏洞扫描平台 - 前端逻辑（v2.3 - Socket.IO 实时增强版）
+ * 支持批量扫描、任务队列监控、高级图表和筛选、WebSocket 实时更新
  */
 
-// 引入图表组件
-// scripts/charts.js 已在 HTML 中加载
+// Socket.IO 全局管理器（由 socketio-client.js 提供）
+let socketIOManager = null;
 
+// ============================================================
 // 全局状态
+// ============================================================
 let currentScanId = null;
 let scanData = null;
 let batchTasks = [];
@@ -18,7 +20,9 @@ let currentFilters = {
     type: 'all'
 };
 
+// ============================================================
 // DOM 元素
+// ============================================================
 const singleScanForm = document.getElementById('singleScanForm');
 const batchScanForm = document.getElementById('batchScanForm');
 const uploadProgress = document.getElementById('uploadProgress');
@@ -29,13 +33,76 @@ const batchFileInput = document.getElementById('batchFileInput');
 const batchFileList = document.getElementById('batchFileList');
 const taskStatusSection = document.getElementById('taskStatusSection');
 
+// ============================================================
+// Socket.IO 事件监听器
+// ============================================================
+function initSocketIOListeners() {
+    if (typeof socketIOManager === 'undefined' || !socketIOManager) {
+        console.warn('⚠️ Socket.IO Manager 未初始化');
+        return;
+    }
+    
+    socketIOManager = window.socketIOManager;
+    
+    // 当收到进度更新时，刷新任务列表
+    socketIOManager.on('onProgressUpdate', (data) => {
+        console.log('📨 收到进度更新:', data);
+        
+        // 如果有当前扫描 ID，更新进度条显示
+        if (currentScanId && data.task_id === currentScanId) {
+            const progressText = document.getElementById('progressText');
+            if (progressText) {
+                progressText.textContent = `正在扫描... ${data.progress}% - ${data.stage}: ${data.details || ''}`;
+            }
+            
+            // 如果进度超过 80%，自动检查是否完成
+            if (data.progress >= 100) {
+                setTimeout(() => {
+                    refreshQueueStats();
+                    loadScanHistory();
+                }, 500);
+            }
+        }
+    });
+    
+    // 当任务完成时，刷新 UI
+    socketIOManager.on('onStatusChange', (data) => {
+        if (data.status === 'completed') {
+            console.log('✅ 任务完成，刷新界面');
+            
+            // 刷新队列统计
+            setTimeout(() => {
+                refreshQueueStats();
+                loadScanHistory();
+                
+                // 如果有 Toast 显示功能，弹出通知
+                if (window.DashboardState) {
+                    DashboardState.showToast('✨ 扫描任务已完成！查看结果页...', 'success');
+                }
+            }, 1000);
+        }
+    });
+    
+    // 当连接状态变化时
+    socketIOManager.on('onConnected', () => {
+        console.log('🟢 Socket.IO 已连接');
+    });
+    
+    socketIOManager.on('onDisconnected', () => {
+        console.log('🔴 Socket.IO 已断开，回退到轮询模式');
+    });
+}
+
+// ============================================================
 // 初始化
+// ============================================================
 document.addEventListener('DOMContentLoaded', () => {
     initEventListeners();
+    initSocketIOListeners(); // 初始化 Socket.IO 监听器
     refreshQueueStats();
     loadScanHistory(); // 加载扫描历史
     
-    // 每 10 秒自动刷新队列状态
+    // 每 10 秒自动刷新队列状态（作为 WebSocket 的备份）
     refreshInterval = setInterval(() => {
         refreshQueueStats();
         loadScanHistory(); // 定期更新历史记录
@@ -122,7 +189,13 @@ async function handleSingleScan(e) {
             throw new Error(scanResult.detail || '扫描失败');
         }
         
-        // 3. 显示结果
+        // 3. 订阅 WebSocket 实时更新（如果可用）
+        if (typeof subscribeToTaskSO === 'function') {
+            subscribeToTaskSO(currentScanId);
+            console.log(`📝 已订阅任务：${currentScanId}`);
+        }
+        
+        // 4. 显示结果
         displayScanResult(scanResult.result);
         
     } catch (error) {
@@ -222,6 +295,14 @@ async function handleBatchScan(e) {
             ...t,
             checked: false
         }));
+        
+        // 订阅所有任务的 WebSocket 实时更新
+        if (typeof subscribeToTaskSO === 'function') {
+            scanResult.tasks.forEach(task => {
+                subscribeToTaskSO(task.task_id);
+                console.log(`📝 批量扫描：已订阅任务 ${task.task_id}`);
+            });
+        }
         
         // 显示任务列表
         setTimeout(() => {
@@ -716,7 +797,7 @@ document.getElementById('exportPdfBtn')?.addEventListener('click', async () => {
     btn.disabled = true;
     
     try {
-        // 调用 PDF 导出 API
+        // 首先尝试调用服务器端 API
         const formData = new FormData();
         formData.append('firmware_id', currentScanId);
         
@@ -726,7 +807,7 @@ document.getElementById('exportPdfBtn')?.addEventListener('click', async () => {
         });
         
         if (response.ok) {
-            // 下载 PDF 文件
+            // 服务器端 PDF 成功
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -739,14 +820,104 @@ document.getElementById('exportPdfBtn')?.addEventListener('click', async () => {
             
             alert('✅ PDF 报告已生成并开始下载！');
         } else {
-            const error = await response.json();
-            alert(`❌ PDF 生成失败：${error.detail || '未知错误'}`);
+            // 服务器端失败，使用客户端生成作为备用方案
+            console.log('服务器端 PDF 不可用，使用客户端生成');
+            await generateClientSidePDF(currentScanId);
         }
     } catch (error) {
         console.error('PDF 生成错误:', error);
-        alert(`❌ PDF 生成失败：${error.message}`);
+        // 如果服务器端失败，尝试客户端生成
+        try {
+            await generateClientSidePDF(currentScanId);
+        } catch (clientError) {
+            alert(`❌ PDF 生成失败：${error.message}`);
+        }
     } finally {
         btn.textContent = originalText;
+        btn.disabled = false;
+    }
+});
+
+/**
+ * 客户端 PDF 生成功能（使用 jsPDF + html2canvas）
+ */
+async function generateClientSidePDF(scanId) {
+    if (!window.jspdf || !window.html2canvas) {
+        alert('❌ PDF 生成库未加载，请稍后重试');
+        return;
+    }
+    
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    
+    try {
+        alert('📄 正在生成客户端 PDF 报告，请稍候...');
+        
+        // 获取需要导出的区域
+        const dashboardSection = document.querySelector('.dashboard-section');
+        const vulnerabilitiesSection = document.querySelector('.vulnerabilities-section');
+        
+        if (!dashboardSection || !vulnerabilitiesSection) {
+            throw new Error('找不到要导出的内容');
+        }
+        
+        // 创建临时的导出容器
+        const exportContainer = document.createElement('div');
+        exportContainer.style.cssText = `
+            position: fixed;
+            left: -9999px;
+            top: 0;
+            width: 210mm; /* A4 宽度 */
+            background: white;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        `;
+        
+        // 复制内容到临时容器
+        exportContainer.innerHTML = `
+            <h1 style="color: #2c3e50; margin-bottom: 20px; text-align: center;">玄武固件安全扫描报告</h1>
+            <p style="text-align: center; color: #7f8c8d; margin-bottom: 30px;">扫描时间：${new Date().toLocaleString('zh-CN')}</p>
+            ${dashboardSection.innerHTML}
+            ${vulnerabilitiesSection.innerHTML}
+        `;
+        
+        document.body.appendChild(exportContainer);
+        
+        // 使用 html2canvas 截图
+        const canvas = await html2canvas(exportContainer, {
+            scale: 2, // 提高清晰度
+            useCORS: true,
+            logging: false
+        });
+        
+        // 移除临时容器
+        document.body.removeChild(exportContainer);
+        
+        // 将 canvas 添加到 PDF
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = 210 - 20; // A4 宽度减去边距
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        doc.setFontSize(16);
+        doc.setTextColor(44, 62, 80);
+        doc.text('玄武固件安全扫描报告', 105, 15, { align: 'center' });
+        
+        doc.setFontSize(10);
+        doc.setTextColor(127, 140, 141);
+        doc.text(`扫描时间：${new Date().toLocaleString('zh-CN')}`, 105, 25, { align: 'center' });
+        
+        doc.addImage(imgData, 'PNG', 10, 35, imgWidth, imgHeight);
+        
+        // 保存 PDF
+        doc.save(`xuanwu_scan_report_${scanId}.pdf`);
+        
+        alert('✅ PDF 报告已成功生成并下载！');
+        
+    } catch (error) {
+        console.error('客户端 PDF 生成错误:', error);
+        throw error;
+    }
+}
         btn.disabled = false;
     }
 });

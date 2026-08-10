@@ -396,11 +396,13 @@ class FirmwareExtractor:
 
 
 class SBOMGenerator:
-    """SBOM 生成器"""
+    """SBOM 生成器 - 支持多种格式"""
     
     def __init__(self):
         self.syft_available = self._check_syft()
+        self.cyclonedx_available = self._check_cyclonedx()
         logger.info(f"Syft 可用性：{'✅' if self.syft_available else '❌'}")
+        logger.info(f"CycloneDX: {'✅' if self.cyclonedx_available else '❌'}")
     
     def _check_syft(self) -> bool:
         """检查 Syft 是否可用"""
@@ -409,6 +411,14 @@ class SBOMGenerator:
                                   capture_output=True, text=True)
             return result.returncode == 0
         except FileNotFoundError:
+            return False
+    
+    def _check_cyclonedx(self) -> bool:
+        """检查 CycloneDX 库是否可用"""
+        try:
+            from scanner.cyclonedx_sbom import HAS_CYCLONEDX
+            return HAS_CYCLONEDX
+        except ImportError:
             return False
     
     def generate_sbom(self, firmware_path: str, firmware_type: str = 'auto') -> List[Component]:
@@ -590,6 +600,111 @@ class SBOMGenerator:
                 return match.group(1)
         
         return None
+    
+    def generate_cyclonedx_sbom(
+        self, 
+        components: List[Component],
+        vulnerabilities: Optional[List[Vulnerability]] = None,
+        output_format: str = 'json',
+        schema_version: str = '1.4'
+    ) -> str:
+        """
+        生成 CycloneDX 格式的 SBOM
+        
+        Args:
+            components: 组件列表
+            vulnerabilities: 漏洞列表 (可选)
+            output_format: 输出格式 ('json' or 'xml')
+            schema_version: CycloneDX 版本 ('1.4' or '1.3')
+        
+        Returns:
+            CycloneDX 格式的 SBOM 字符串
+        """
+        try:
+            from scanner.cyclonedx_sbom import generate_cyclonedx_sbom as cyclonedx_generator
+            
+            # 转换组件为 CycloneDX 格式
+            comp_data = []
+            for comp in components:
+                comp_dict = {
+                    'name': comp.name,
+                    'version': comp.version or '0.0.0',
+                    'type': comp.type or 'library',
+                    'description': getattr(comp, 'description', None),
+                }
+                
+                if hasattr(comp, 'cpe') and comp.cpe:
+                    comp_dict['cpe'] = comp.cpe
+                
+                if hasattr(comp, 'purl') and comp.purl:
+                    comp_dict['purl'] = comp.purl
+                
+                if hasattr(comp, 'path') and comp.path:
+                    comp_dict['supplier'] = f"Found in: {comp.path}"
+                
+                comp_data.append(comp_dict)
+            
+            # 转换漏洞
+            vuln_data = []
+            if vulnerabilities:
+                for vuln in vulnerabilities:
+                    vuln_dict = {
+                        'id': vuln.cve_id,
+                        'source': 'NVD',
+                        'description': vuln.description or '',
+                        'published': vuln.published_date,
+                        'ratings': [{
+                            'method': 'CVSSv31',
+                            'severity': vuln.severity.lower() if vuln.severity else 'unknown',
+                            'score': vuln.cvss_score or 0.0
+                        }]
+                    }
+                    
+                    if vuln.fix_versions:
+                        vuln_dict['recommendations'] = [f"Upgrade to {ver}"]
+                    
+                    vuln_data.append(vuln_dict)
+            
+            # 生成 CycloneDX SBOM
+            sbom_json = cyclonedx_generator(
+                components=comp_data,
+                vulnerabilities=vuln_data,
+                schema_version=schema_version,
+                output_format=output_format
+            )
+            
+            logger.info(f"✅ CycloneDX SBOM 生成成功 (格式={output_format}, 版本={schema_version})")
+            return sbom_json
+            
+        except Exception as e:
+            logger.error(f"❌ CycloneDX SBOM 生成失败：{e}")
+            import traceback
+            traceback.print_exc()
+            raise RuntimeError(f"CycloneDX SBOM 生成失败：{e}")
+    
+    def generate_syft_sbom_raw(self, firmware_path: str) -> str:
+        """
+        使用 Syft 生成原始 JSON SBOM
+        
+        Args:
+            firmware_path: 固件路径
+        
+        Returns:
+            Syft JSON 格式字符串
+        """
+        if not self.syft_available:
+            raise RuntimeError("Syft 未安装，请先运行：sudo snap install syft")
+        
+        try:
+            result = subprocess.run(
+                ['syft', '-o', 'json', firmware_path],
+                capture_output=True, text=True, check=True,
+                timeout=300
+            )
+            return result.stdout
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Syft SBOM 生成失败：{e}")
+            raise RuntimeError(f"Syft SBOM 生成失败：{e.stderr}")
 
 
 class CVEMatcher:

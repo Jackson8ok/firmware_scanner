@@ -26,6 +26,8 @@
 - ✅ **EPSS 评分** - 漏洞利用概率预测
 - ✅ **批量扫描** - 支持并发处理多个固件
 - ✅ **可视化仪表板** - 实时进度 + 高级图表分析
+- ✅ **多格式报告** - PDF（客户端生成）、Excel、Word、PPT 导出
+- ✅ **WebSocket 实时通知** - 扫描进度实时更新
 
 **目标用户：** 汽车电子制造商、IoT 设备厂商、安全研究团队、学术机构
 
@@ -91,6 +93,32 @@ python3 -m uvicorn api.main:app --host 0.0.0.0 --port 8000
 </div>
 
 ### 核心特性
+
+#### 📦 **CycloneDX SBOM 生成**
+
+```bash
+# 下载任务的 SBOM（CycloneDX 1.4 JSON）
+curl -X GET "http://localhost:8000/api/sbom/{task_id}" \
+  -o sbom.cyclonedx.json
+
+# 验证 SBOM 合规性
+curl -X GET "http://localhost:8000/api/sbom/{task_id}/validate"
+
+# Python SDK
+from scanner.cyclonedx_sbom import generate_cyclonedx_sbom
+
+sbom = generate_cyclonedx_sbom(
+    components=[{'name': 'FreeRTOS', 'version': '10.4.6'}],
+    vulnerabilities=[{'id': 'CVE-2022-30801', 'severity': 'high'}]
+)
+
+with open('sbom.cyclonedx.json', 'w') as f:
+    f.write(sbom)
+```
+
+📖 **详情**: [CYCLONEDX_GUIDE.md](./docs/CYCLONEDX_GUIDE.md)
+
+---
 
 #### 🔍 智能漏洞检测
 
@@ -333,7 +361,8 @@ git push origin feature/amazing-feature
 | W1-D2 批量扫描 | ✅ 完成 | 2026-07-22 |
 | W1-D3 Dashboard 增强 | ✅ 完成 | 2026-07-23 |
 | W1-D4 R155 合规 | ✅ 完成 | 2026-07-24 |
-| W2 PDF/Excel导出 | 🔄 进行中 | 2026-07-25 |
+| W2 PDF/Excel导出 | ✅ 完成 | 2026-08-10 |
+| W2 WebSocket 实时通知 | ✅ 完成 | 2026-08-07 |
 
 ---
 

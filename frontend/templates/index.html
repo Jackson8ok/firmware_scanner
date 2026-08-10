@@ -3,8 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>固件漏洞扫描平台 v2.2</title>
+    <title>固件漏洞扫描平台 v2.3</title>
     <link rel="stylesheet" href="/static/styles.css">
+    
+    <!-- WebSocket 连接状态指示器样式 -->
+    <style>
+        .ws-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .ws-indicator:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .ws-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .ws-text {
+            white-space: nowrap;
+        }
+        
+        /* 已连接 - 绿色 */
+        .ws-connected {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .ws-connected .ws-dot {
+            background: #28a745;
+        }
+        
+        /* 未连接 - 灰色 */
+        .ws-disconnected {
+            background: #f8f9fa;
+            border-color: #6c757d;
+            color: #495057;
+        }
+        
+        .ws-disconnected .ws-dot {
+            background: #6c757d;
+        }
+        
+        /* 重连中 - 黄色 */
+        .ws-reconnecting {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+        
+        .ws-reconnecting .ws-dot {
+            background: #ffc107;
+            animation: blink 0.5s infinite;
+        }
+        
+        /* 连接失败 - 红色 */
+        .ws-failed {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        
+        .ws-failed .ws-dot {
+            background: #dc3545;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.2; }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -253,12 +345,42 @@
         </main>
 
         <footer>
-            <p>&copy; 2026 固件漏洞扫描平台 | v2.2 Dashboard 增强版 | 支持 SquashFS/HEX/SREC/Binary</p>
+            <p>&copy; 2026 固件漏洞扫描平台 | v2.3 WebSocket 增强版 | 支持 SquashFS/HEX/SREC/Binary</p>
+            
+            <!-- WebSocket 连接状态指示器 -->
+            <div id="wsConnectionIndicator" class="ws-indicator ws-disconnected" title="WebSocket 未连接">
+                <span class="ws-dot"></span>
+                <span class="ws-text">正在连接...</span>
+            </div>
         </footer>
     </div>
 
+    <!-- Socket.IO 客户端库（从服务器自动提供） -->
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <!-- Socket.IO 实时通知客户端 -->
+    <script src="/static/socketio-client.js"></script>
+    
+    <!-- jsPDF - 客户端 PDF 生成库 (CDN) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <!-- html2canvas - 用于将 HTML 转换为 Canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     <!-- 图表组件库 -->
     <script src="/static/charts.js"></script>
+    
+    <!-- 高级图表（新增） -->
+    <script src="/static/advanced-charts.js"></script>
+    
+    <!-- 前端增强模块（新增） -->
+    <script src="/static/dashboard-enhanced.js"></script>
+    
+    <!-- 增强的样式（新增） -->
+    <link rel="stylesheet" href="/static/enhanced-styles.css">
+    
+    <!-- WebSocket 实时通知（新增） -->
+    <script src="/static/websocket-client.js"></script>
     
     <!-- 主应用逻辑 -->
     <script src="/static/app.js"></script>

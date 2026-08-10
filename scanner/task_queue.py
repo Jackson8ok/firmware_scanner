@@ -383,12 +383,23 @@ class ScanQueue:
                         }
                         self.db.save_task(current_task)
                         
-                        # 触发回调
+                        # 触发本地回调
                         for callback in self._on_progress_callbacks:
                             try:
                                 callback(task.task_id, progress, stage, details)
                             except Exception as e:
                                 logger.error(f"回调失败：{e}")
+                        
+                        # 发送 WebSocket 通知
+                        self._send_notification("scan_progress", {
+                            "task_id": task.task_id,
+                            "filename": task.filename,
+                            "status": "running",
+                            "progress": progress,
+                            "stage": stage,
+                            "details": details,
+                            "timestamp": datetime.now().isoformat()
+                        })
                 
                 logger.debug(f"[{task.task_id[:8]}] {stage}: {progress}% - {details}")
             
@@ -510,7 +521,7 @@ class ScanQueue:
                 'scan_time': datetime.now().isoformat()
             }
             
-            # 保存结果
+            # 保存结果并发送通知
             with self.lock:
                 completed_task = self.db.get_task(task.task_id)
                 if completed_task:
@@ -519,6 +530,16 @@ class ScanQueue:
                     completed_task.completed_at = datetime.now().isoformat()
                     completed_task.result = result
                     self.db.save_task(completed_task)
+            
+            # 发送完成通知
+            self._send_notification("scan_completed", {
+                "task_id": task.task_id,
+                "filename": task.filename,
+                "status": "completed",
+                "progress": 100,
+                "result": result,
+                "timestamp": datetime.now().isoformat()
+            })
             
             update_progress("completed", 100, "扫描完成!")
             
@@ -533,6 +554,16 @@ class ScanQueue:
         except Exception as e:
             error_msg = f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
             logger.error(f"❌ 任务失败：{task.task_id} - {error_msg}")
+            
+            # 发送失败通知
+            self._send_notification("scan_failed", {
+                "task_id": task.task_id,
+                "filename": task.filename,
+                "status": "failed",
+                "progress": 0,
+                "error_message": error_msg,
+                "timestamp": datetime.now().isoformat()
+            })
             
             with self.lock:
                 failed_task = self.db.get_task(task.task_id)
@@ -636,6 +667,25 @@ class ScanQueue:
     def register_progress_callback(self, callback: Callable):
         """注册进度回调函数"""
         self._on_progress_callbacks.append(callback)
+    
+    def set_notification_sender(self, sender_func: Optional[Callable]):
+        """设置通知发送函数（用于 WebSocket 推送）
+        
+        Args:
+            sender_func: 函数签名 func(event_type: str, data: dict) -> None
+                        例如：sender_func("scan_progress", {"task_id": "...", "progress": 50})
+        """
+        self._notification_sender = sender_func
+        if sender_func:
+            logger.info("✅ WebSocket 通知发送器已注册")
+    
+    def _send_notification(self, event_type: str, data: Dict):
+        """发送通知（内部方法）"""
+        if hasattr(self, '_notification_sender') and self._notification_sender:
+            try:
+                self._notification_sender(event_type, data)
+            except Exception as e:
+                logger.error(f"WebSocket 通知发送失败：{e}")
     
     def wait_for_completion(self, task_id: str, poll_interval: float = 1.0) -> Optional[ScanTask]:
         """等待任务完成"""
