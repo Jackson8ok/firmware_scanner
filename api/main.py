@@ -143,6 +143,7 @@ app.add_exception_handler(Exception, generic_exception_handler)
 templates_path = Path(__file__).parent.parent / "frontend" / "templates"
 static_path = Path(__file__).parent.parent / "frontend" / "static"
 
+# 标准方式初始化 Jinja2Templates（FastAPI 会自动启用 autoescape）
 templates = Jinja2Templates(directory=str(templates_path))
 
 # 确保目录存在
@@ -218,12 +219,24 @@ class QueueStatsResponse(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
-    """首页"""
-    return templates.TemplateResponse(
-        "index.html",
-        {"request": request},
-        media_type="text/html"
-    )
+    """首页 - 使用底层模板渲染避免缓存 bug"""
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # 直接获取模板环境并渲染（不经过 TemplateResponse 包装）
+        template = templates.env.get_template("index.html")
+        
+        # 渲染模板
+        html_content = template.render(request=request, now=datetime.now())
+        
+        logger.info("✅ 模板渲染成功（底层方式）")
+        return HTMLResponse(content=html_content)
+        
+    except Exception as e:
+        logger.error(f"❌ 模板渲染失败：{e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"模板渲染失败：{str(e)}")
 
 @app.get("/api/health")
 async def health_check():
