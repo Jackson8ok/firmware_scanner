@@ -1,9 +1,9 @@
-# 🦞 固件漏洞扫描平台 - 项目状态报告
+# 🐢 固件漏洞扫描平台 - 项目状态报告
 
 **日期**: 2026-08-05  
 **版本**: v2.3 Dashboard 增强版  
-**维护者**: 攻城狮阿信 (Jackson)  
-**项目名**: 玄武 (Xuanwu) / PokeClaw
+**维护者**: 攻城狮阿信[Jackson]  
+**项目名**: 玄武 (Xuanwu)
 
 ---
 
@@ -338,16 +338,16 @@ gantt
 
 ## 📞 联系与支持
 
-**项目负责人**: 攻城狮阿信 (Jackson)  
-**邮箱**: jackson@pokeclaw.io  
+**项目负责人**: 攻城狮阿信[Jackson]  
+**邮箱**: zhu80k@163.com  
 **GitHub**: [@Jackson8ok](https://github.com/Jackson8ok)  
-**Discord**: https://discord.gg/pokeclaw
+**Discord**: https://github.com/Jackson8ok/firmware_scanner
 
 **社区资源**:
 - 📖 [官方文档](./docs/)
 - 🐛 [Issue 追踪](https://github.com/Jackson8ok/firmware_scanner/issues)
 - 💬 [讨论区](https://github.com/Jackson8ok/firmware_scanner/discussions)
-- 📱 [Telegram 群组](https://t.me/pokeclaw)
+- 📱 [Telegram 群组](https://github.com/Jackson8ok/firmware_scanner)
 
 ---
 
@@ -367,7 +367,7 @@ gantt
 ---
 
 **最后更新**: 2026-08-05 10:30 (Wednesday)  
-**维护者**: 攻城狮阿信 (Jackson) 🦞  
+**维护者**: 攻城狮阿信[Jackson] 🐢  
 **版本**: v2.3 Dashboard 增强版
 
 <!-- ⟞ 项目状态报告 v2.3 完成，涵盖所有已完成功能和后续规划 ⟟ -->

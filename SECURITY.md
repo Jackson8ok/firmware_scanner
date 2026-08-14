@@ -10,7 +10,7 @@
 
 ### 正确做法：
 
-1. **发送邮件至**: security@pokeclaw.io
+1. **发送邮件至**: zhu80k@163.com
 2. **包含以下信息**:
    - 漏洞类型（如 SQL 注入、XSS、认证绕过等）
    - 受影响版本
@@ -76,7 +76,7 @@ x.y.修订版本 → Bug 修复和安全补丁
 所有安全更新都会在以下渠道发布：
 
 - 📧 GitHub Security Advisories
-- 📰 [GitHub Releases](https://github.com/pokeclaw/scanner/releases)
+- 📰 [GitHub Releases](https://github.com/Jackson8ok/firmware_scanner/releases)
 - 💬 Discord 安全频道
 - 🐦 Twitter (@玄武IO)
 
@@ -98,10 +98,10 @@ SECURITY_ADVISORIES.md  <- 查看所有安全公告
 
 ```bash
 # 使用官方镜像
-docker pull ghcr.io/pokeclaw/scanner:latest
+docker pull ghcr.io/Jackson8ok/firmware_scanner:latest
 
 # 定期更新
-docker pull ghcr.io/pokeclaw/scanner:latest
+docker pull ghcr.io/Jackson8ok/firmware_scanner:latest
 docker compose up -d
 
 # 最小权限运行
@@ -115,7 +115,7 @@ docker run -e DB_PASSWORD_FILE=/run/secrets/db_password ...
 
 ```bash
 # ❌ 不使用最新镜像
-docker pull pokeclaw/scanner:v0.1.0
+docker pull Jackson8ok/firmware_scanner:v0.1.0
 
 # ❌ 以 root 运行
 docker run -u root ...
@@ -210,10 +210,10 @@ cronjob: "0 * * * * curl -s http://localhost:8000/health | grep -q OK || send_al
 
 ## 📞 联系方式
 
-- **安全团队邮箱**: security@pokeclaw.io
-- **PGP 密钥**: [下载公钥](https://pokeclaw.io/pgp-key.asc)
+- **安全团队邮箱**: zhu80k@163.com
+- **PGP 密钥**: [下载公钥](https://github.com/Jackson8ok/firmware_scanner/pgp-key.asc)
 - **Discord**: #security 频道
-- **应急响应**: emergency@pokeclaw.io（仅用于紧急安全事件）
+- **应急响应**: zhu80k@163.com（仅用于紧急安全事件）
 
 ---
 

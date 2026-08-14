@@ -459,14 +459,14 @@ A: 查看标记为 [`good first issue`](https://github.com/pokeclaw/scanner/issu
 
 - 💡 [Discussions](https://github.com/pokeclaw/scanner/discussions) - 提问交流
 - 🐛 [Issues](https://github.com/pokeclaw/scanner/issues) - 报告问题
-- ✉️ Email: contact@pokeclaw.io
+- ✉️ Email: zhu80k@163.com
 
 ---
 
 **感谢所有为 玄武 做出贡献的人！** ❤️
 
 <a href="https://github.com/pokeclaw/scanner/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=pokeclaw/scanner" />
+  <img src="https://contrib.rocks/image?repo=Jackson8ok/firmware_scanner" />
 </a>
 
 Made with [contrib.rocks](https://contrib.rocks).

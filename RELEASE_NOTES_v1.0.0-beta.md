@@ -56,7 +56,7 @@ Response:
 | 变更项 | 旧名称 | 新名称 |
 |--------|--------|--------|
 | 项目名称 | PokeClaw | 玄武/Xuanwu |
-| Logo Emoji | 🦞 (龙虾) | 🐢 (玄武/龟蛇合体) |
+| Logo Emoji | 🐢 (龙虾) | 🐢 (玄武/龟蛇合体) |
 | 核心团队 | PokeClaw Team | 玄武团队 |
 | 核心开发者 | Mewtwo Master | 攻城狮阿信 |
 
@@ -327,7 +327,7 @@ rcParams['font.family'] = 'WenQuanYi Micro Hei'
 - ☑️ SIEM 系统集成
 - ☑️ 优先技术支持 ($499/年)
 
-如需了解更多信息，请联系：**contact@pokeclaw.io**
+如需了解更多信息，请联系：**zhu80k@163.com**
 
 ---
 
@@ -392,8 +392,8 @@ git push origin feature/amazing-feature
 - **GitHub 仓库**: https://github.com/Jackson8ok/firmware_scanner
 - **Issues 反馈**: https://github.com/Jackson8ok/firmware_scanner/issues
 - **Discussions**: https://github.com/Jackson8ok/firmware_scanner/discussions
-- **安全报告**: security@pokeclaw.io
-- **项目邮箱**: contact@pokeclaw.io
+- **安全报告**: zhu80k@163.com
+- **项目邮箱**: zhu80k@163.com
 
 ---
 
@@ -403,7 +403,7 @@ git push origin feature/amazing-feature
 
 1. **提交 Issue**: https://github.com/Jackson8ok/firmware_scanner/issues/new
 2. **发起讨论**: https://github.com/Jackson8ok/firmware_scanner/discussions
-3. **发送邮件**: contact@pokeclaw.io
+3. **发送邮件**: zhu80k@163.com
 
 我们承诺在 48 小时内响应所有 Issue 和邮件。
 

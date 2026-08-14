@@ -210,7 +210,7 @@ class TestIntegration(unittest.TestCase):
 def run_all_tests():
     """运行所有测试"""
     print("\n" + "="*70)
-    print(" 🦞 固件漏洞扫描平台 - 完整测试套件")
+    print(" 🐢 固件漏洞扫描平台 - 完整测试套件")
     print("   开始时间:", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     print("="*70)
     

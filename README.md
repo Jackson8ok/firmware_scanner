@@ -1,4 +1,4 @@
-# 🐢 玄武 - 汽车固件 R155 合规审计平台
+# 🐢 玄武 - 固件漏洞扫描平台
 
 <div align="center">
 
@@ -9,7 +9,7 @@
 ![Release](https://img.shields.io/github/v/release/Jackson8ok/firmware_scanner?label=Latest)
 [![Stars](https://img.shields.io/github/stars/Jackson8ok/firmware_scanner?style=social)](https://github.com/Jackson8ok/firmware_scanner/stargazers)
 
-**🚀 一键生成 R155 审计所需全部文档 · 汽车固件安全分析 · SBOM自动化生成**
+**🚀 一键生成 R155 审计所需全部文档 · 固件安全分析 · SBOM自动化生成 · 漏洞优先级排序**
 
 📖 [快速上手](#快速开始) | 📋 [审计报告包详解](#审计报告包) | 🚀 [90 天商业化路线图](#90 天商业化路线图) | 💼 [企业服务](#企业版服务) | 🤝 [贡献指南](#contributing)
 
@@ -102,12 +102,12 @@ open http://localhost:8000  # macOS
 
 ```bash
 docker run -d \
-  --name pokeclaw \
+  --name xuanwu-scanner \
   -p 8000:8000 \
   -v ./data:/app/data \
   ghcr.io/Jackson8ok/firmware_scanner:latest
   
-docker exec -it pokeclaw tail -f logs/app.log
+docker exec -it xuanwu-scanner tail -f logs/app.log
 ```
 
 ### 手动安装
@@ -197,7 +197,7 @@ curl -X POST "http://localhost:8000/api/report/audit-package/{task_id}" \
 - ✅ 架构优化建议
 - ✅ 现场技术支持
 
-**联系合作**: jackson@pokeclaw.dev
+**联系合作**: zhu80k@163.com
 
 ---
 
@@ -480,7 +480,7 @@ git push origin feature/amazing-feature
 
 ### 社区
 
-- 💬 [Discord 服务器](https://discord.gg/pokeclaw) - 实时讨论
+- 💬 [GitHub Discussions](https://github.com/Jackson8ok/firmware_scanner/discussions) - 实时讨论
 - 🐛 [GitHub Issues](https://github.com/Jackson8ok/firmware_scanner/issues) - 报告问题
 - ✨ [Feature Requests](https://github.com/Jackson8ok/firmware_scanner/discussions) - 建议功能
 
@@ -549,9 +549,9 @@ git push origin feature/amazing-feature
 
 ## 📞 联系方式
 
-- 项目负责人：攻城狮阿信
-- Email: contact@pokeclaw.io
-- 网站：https://pokeclaw.io
+- 项目负责人：攻城狮阿信[Jackson]
+- Email: zhu80k@163.com
+- GitHub: https://github.com/Jackson8ok/firmware_scanner
 - 地址：中国·上海
 
 ---

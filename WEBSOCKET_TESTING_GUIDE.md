@@ -201,4 +201,4 @@ refreshInterval = setInterval(() => {
 
 **最后更新**: 2026-08-05  
 **版本**: v2.3  
-**作者**: 攻城狮阿信 (Jackson)
+**作者**: 攻城狮阿信[Jackson]

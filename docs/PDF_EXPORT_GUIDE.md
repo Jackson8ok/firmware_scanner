@@ -359,4 +359,4 @@ const canvas = await html2canvas(exportContainer, {
 3. 扫描数据规模（CVE 数量）
 4. 复现步骤
 
-🦞 **玄武固件安全扫描平台** | 安全 · 可靠 · 高效
+🐢 **玄武固件安全扫描平台** | 安全 · 可靠 · 高效

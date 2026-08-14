@@ -372,6 +372,6 @@ document.querySelectorAll('.notification').forEach(n => n.remove());
 ---
 
 **测试指南最后更新**: 2026-08-04  
-**维护者**: 攻城狮阿信 (Jackson) 🦞
+**维护者**: 攻城狮阿信[Jackson] 🐢
 
 <!-- ⟞ 前端增强测试指南创建完成，覆盖所有新增功能 ⟟ -->

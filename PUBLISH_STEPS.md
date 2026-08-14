@@ -15,7 +15,7 @@
 
 1. **访问**: https://github.com/new
 2. **填写信息**:
-   - Repository name: `scanner` (或 `pokeclaw-scanner`)
+   - Repository name: `firmware_scanner`
    - Description: `🐢 固件漏洞扫描平台 - R155/R156合规检查`
    - Visibility: **Public** (公开)
    - ⚠️ **不要勾选** "Initialize with README" 等选项
@@ -100,7 +100,7 @@ cat ~/.ssh/id_ed25519.pub
 ### 📦 快速开始
 
 ```bash
-docker run -d --name pokeclaw -p 8000:8000 ghcr.io/Jackson8ok/firmware_scanner:latest
+docker run -d --name xuanwu-scanner -p 8000:8000 ghcr.io/Jackson8ok/firmware_scanner:latest
 open http://localhost:8000
 ```
 
@@ -230,4 +230,4 @@ A: 检查 `.github/workflows/` 目录是否存在，以及文件名是否正确�
 
 **祝你发布顺利！🎉**
 
-如有问题，联系: contact@pokeclaw.io
+如有问题，联系: zhu80k@163.com

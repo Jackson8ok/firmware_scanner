@@ -324,11 +324,11 @@ performance:
 遇到问题或有建议？
 
 - 🐛 [提交 Issue](https://github.com/Jackson8ok/firmware_scanner/issues)
-- 💬 [Discord 讨论](https://discord.gg/pokeclaw)
-- 📧 Email: contact@pokeclaw.io
+- 💬 [Discord 讨论](https://github.com/Jackson8ok/firmware_scanner)
+- 📧 Email: zhu80k@163.com
 
 ---
 
-**感谢参与开发的每一位贡献者！** 🦞
+**感谢参与开发的每一位贡献者！** 🐢
 
 *本文档由玄武团队自动生成，最后更新于 2026-08-04*

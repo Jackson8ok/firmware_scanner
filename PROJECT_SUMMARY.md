@@ -368,7 +368,7 @@ Examples:
 
 - **GitHub Issues**: https://github.com/Jackson8ok/firmware_scanner/issues
 - **Discussions**: https://github.com/Jackson8ok/firmware_scanner/discussions
-- **Email**: contact@pokeclaw.io
+- **Email**: zhu80k@163.com
 - **维护者**: 攻城狮阿信 (Jackson8ok)
 
 ---

@@ -12,6 +12,7 @@ cors:
     - "http://127.0.0.1:3000"
     - "http://localhost:8080"
     - "https://2098771-proxy-8000.dsw-gateway-cn-hangzhou.data.aliyun.com"
+    - "https://2101165-proxy-8000.dsw-gateway-cn-hangzhou.data.aliyun.com"
   allow_credentials: true
 
 # 任务队列配置

@@ -371,6 +371,25 @@ async def get_task_status(task_id: str):
         logger.error(f"获取任务状态失败：{e}")
         raise HTTPException(status_code=500, detail=f"查询失败：{str(e)}")
 
+@_base_app.get("/api/task/{task_id}/result")
+async def get_task_result(task_id: str):
+    """获取任务扫描结果"""
+    try:
+        queue = get_queue()
+        task = queue.get_task_status(task_id)
+        
+        if not task:
+            raise HTTPException(status_code=404, detail="任务不存在")
+        
+        result = task.result if task.result else {}
+        
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取任务结果失败：{e}")
+        raise HTTPException(status_code=500, detail=f"查询失败：{str(e)}")
+
 @_base_app.get("/api/queue/stats")
 async def get_queue_stats():
     """获取队列统计"""
@@ -825,7 +844,7 @@ if __name__ == "__main__":
     import uvicorn
     
     logger.info("=" * 60)
-    logger.info("🦞 固件漏洞扫描平台 v2.4.1-hotfix (WebSocket 已正确启用)")
+    logger.info("🐢 固件漏洞扫描平台 v2.4.1-hotfix (WebSocket 已正确启用)")
     logger.info("=" * 60)
     
     # 启动包含 Socket.IO 的完整 ASGI 应用

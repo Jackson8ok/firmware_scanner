@@ -32,7 +32,7 @@
 
 ```bash
 docker images | grep scanner
-# 输出示例: ghcr.io/pokeclaw/scanner   latest   abc1234   2 days ago   500MB
+# 输出示例: ghcr.io/Jackson8ok/firmware_scanner   latest   abc1234   2 days ago   500MB
 ```
 
 ## 📋 日志信息

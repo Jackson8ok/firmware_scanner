@@ -53,7 +53,7 @@ if __name__ == "__main__":
     import uvicorn
     
     logger.info("=" * 60)
-    logger.info("🦞 固件漏洞扫描平台 v2.4.1 (WebSocket 已正确启用)")
+    logger.info("🐢 固件漏洞扫描平台 v2.4.1 (WebSocket 已正确启用)")
     logger.info("=" * 60)
     
     uvicorn.run('''
@@ -503,7 +503,7 @@ def check_and_fix_frontend_syntax():
 
 def main():
     print("=" * 60)
-    print("🦞 v2.4.0 → v2.4.1-hotfix 自动修复工具")
+    print("🐢 v2.4.0 → v2.4.1-hotfix 自动修复工具")
     print("=" * 60)
     print()
     

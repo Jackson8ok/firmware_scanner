@@ -1,7 +1,7 @@
 # 📋 下周工作计划 (W3 - 2026)
 
 **周期**: 2026-08-05 ~ 2026-08-11  
-**负责人**: 攻城狮阿信 (Jackson)  
+**负责人**: 攻城狮阿信[Jackson]  
 **目标**: 完成 WebSocket 实时通知集成 + 启动新功能开发
 
 ---
@@ -411,9 +411,9 @@ function updateWsStatus(state, text) {
 - **合并要求**: CI 通过 + 测试覆盖
 
 ### 沟通渠道
-- 📧 Email: jackson@pokeclaw.io
+- 📧 Email: zhu80k@163.com
 - 💬 Slack: #firmware-scanner-dev
-- 📱 微信: PokeClaw 开发群
+- 📱 微信: 玄武开发交流群
 - 🎥 视频会议：每周二、四 晚 8 点
 
 ---
@@ -455,7 +455,7 @@ function updateWsStatus(state, text) {
 ---
 
 **最后更新**: 2026-08-05  
-**维护者**: 攻城狮阿信 (Jackson) 🦞  
+**维护者**: 攻城狮阿信[Jackson] 🐢  
 **状态**: 🔄 进行中
 
 <!-- ⟞ W3 工作计划创建完成，详细到每日任务 ⟟ -->

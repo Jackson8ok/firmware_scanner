@@ -280,4 +280,4 @@ python test_cyclonedx.py
 
 **版本**: 2.1-alpha  
 **最后更新**: 2026-08-04  
-**维护者**: Xuanwu Team 🦞
+**维护者**: Xuanwu Team 🐢

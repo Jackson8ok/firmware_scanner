@@ -239,4 +239,4 @@ python main.py
 # 然后在浏览器打开 http://localhost:8000
 ```
 
-🦞 **玄武固件安全扫描平台 v2.3 - Ready for Production!** 🦞
+🐢 **玄武固件安全扫描平台 v2.3 - Ready for Production!** 🐢

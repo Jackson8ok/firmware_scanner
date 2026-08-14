@@ -305,7 +305,7 @@ frontend/static/images/demo/
 
 感谢以下人员的支持：
 
-- **攻城狮阿信** - 核心架构与开发
+- **攻城狮阿信[Jackson]** - 核心架构与开发
 - **玄武 Team** - 持续贡献
 - **Early Adopters** - 提供宝贵反馈
 
@@ -318,7 +318,7 @@ frontend/static/images/demo/
 
 ## 📞 联系我们
 
-- **Email**: contact@pokeclaw.io
+- **Email**: zhu80k@163.com
 - **GitHub**: https://github.com/Jackson8ok/firmware_scanner
 - **Discord**: [加入服务器链接]
 - **Twitter**: @玄武IO

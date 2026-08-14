@@ -3,8 +3,7 @@
  * 支持批量扫描、任务队列监控、高级图表和筛选、WebSocket 实时更新
  */
 
-// Socket.IO 全局管理器（由 socketio-client.js 提供）
-let socketIOManager = null;
+// Socket.IO 全局管理器（由 socketio-client.js 提供，直接使用 window.socketIOManager）
 
 // ============================================================
 // 全局状态
@@ -21,28 +20,39 @@ let currentFilters = {
 };
 
 // ============================================================
-// DOM 元素
+// DOM 元素（在 DOMContentLoaded 中初始化）
 // ============================================================
-const singleScanForm = document.getElementById('singleScanForm');
-const batchScanForm = document.getElementById('batchScanForm');
-const uploadProgress = document.getElementById('uploadProgress');
-const statsGrid = document.getElementById('statsGrid');
-const vulnTableBody = document.getElementById('vulnTableBody');
-const severityFilter = document.getElementById('severityFilter');
-const batchFileInput = document.getElementById('batchFileInput');
-const batchFileList = document.getElementById('batchFileList');
-const taskStatusSection = document.getElementById('taskStatusSection');
+let singleScanForm, batchScanForm, uploadProgress, statsGrid, vulnTableBody;
+let severityFilter, batchFileInput, batchFileList, taskStatusSection;
+
+function initDOMElements() {
+    singleScanForm = document.getElementById('singleScanForm');
+    batchScanForm = document.getElementById('batchScanForm');
+    uploadProgress = document.getElementById('uploadProgress');
+    statsGrid = document.getElementById('statsGrid');
+    vulnTableBody = document.getElementById('vulnTableBody');
+    severityFilter = document.getElementById('severityFilter');
+    batchFileInput = document.getElementById('batchFileInput');
+    batchFileList = document.getElementById('batchFileList');
+    taskStatusSection = document.getElementById('taskStatusSection');
+    
+    // 检查关键元素是否存在
+    if (!singleScanForm || !batchScanForm || !uploadProgress) {
+        console.error('❌ 关键 DOM 元素未找到，页面可能未完全加载');
+    }
+}
 
 // ============================================================
 // Socket.IO 事件监听器
 // ============================================================
 function initSocketIOListeners() {
-    if (typeof socketIOManager === 'undefined' || !socketIOManager) {
+    // 从 window 获取 socketIOManager（由 socketio-client.js 提供）
+    const socketIOManager = window.socketIOManager;
+    
+    if (!socketIOManager) {
         console.warn('⚠️ Socket.IO Manager 未初始化');
         return;
     }
-    
-    socketIOManager = window.socketIOManager;
     
     // 当收到进度更新时，刷新任务列表
     socketIOManager.on('onProgressUpdate', (data) => {
@@ -97,6 +107,7 @@ function initSocketIOListeners() {
 // 初始化
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
+    initDOMElements(); // 初始化 DOM 元素
     initEventListeners();
     initSocketIOListeners(); // 初始化 Socket.IO 监听器
     refreshQueueStats();
@@ -117,8 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initEventListeners() {
-    singleScanForm.addEventListener('submit', handleSingleScan);
-    batchScanForm.addEventListener('submit', handleBatchScan);
+    singleScanForm?.addEventListener('submit', handleSingleScan);
+    batchScanForm?.addEventListener('submit', handleBatchScan);
     
     // 筛选控件事件
     document.getElementById('timeRangeFilter')?.addEventListener('change', (e) => {
@@ -128,7 +139,7 @@ function initEventListeners() {
         currentFilters.type = e.target.value;
     });
     
-    severityFilter.addEventListener('change', filterVulnerabilities);
+    severityFilter?.addEventListener('change', filterVulnerabilities);
     
     // 批量文件选择监听
     if (batchFileInput) {
@@ -169,11 +180,11 @@ async function handleSingleScan(e) {
             throw new Error(uploadResult.message);
         }
         
-        currentScanId = uploadResult.firmware_id;
+        const firmwareId = uploadResult.filename;  // 保存 firmware_id
         
         // 2. 开始扫描
         const scanFormData = new FormData();
-        scanFormData.append('firmware_id', currentScanId);
+        scanFormData.append('firmware_id', firmwareId);
         scanFormData.append('firmware_type', firmwareType);
         
         showProgress(true, '正在扫描中...');
@@ -189,21 +200,86 @@ async function handleSingleScan(e) {
             throw new Error(scanResult.detail || '扫描失败');
         }
         
+        // 使用 task_id（UUID）进行后续操作
+        const taskId = scanResult.task_id;
+        currentScanId = taskId;
+        
         // 3. 订阅 WebSocket 实时更新（如果可用）
         if (typeof subscribeToTaskSO === 'function') {
-            subscribeToTaskSO(currentScanId);
-            console.log(`📝 已订阅任务：${currentScanId}`);
+            subscribeToTaskSO(taskId);
+            console.log(`📝 已订阅任务：${taskId}`);
         }
         
-        // 4. 显示结果
-        displayScanResult(scanResult.result);
+        // 4. 显示成功提示并开始轮询任务状态
+        showNotification('✅ 文件上传成功，扫描任务已提交！', 'success');
+        showProgress(true, '正在扫描中...');
+        
+        // 5. 轮询任务状态直到完成（使用 task_id）
+        pollTaskStatus(taskId);
         
     } catch (error) {
         console.error('扫描失败:', error);
+        showNotification(`❌ 扫描失败：${error.message}`, 'error');
         alert(`扫描失败：${error.message}`);
     } finally {
-        showProgress(false);
+        // 不立即隐藏进度条，等待任务完成
     }
+}
+
+// ============================================================
+// 任务状态轮询（备用方案，当 WebSocket 不可用时）
+// ============================================================
+async function pollTaskStatus(taskId) {
+    const maxAttempts = 60; // 最多轮询 60 次（约 1 分钟）
+    let attempts = 0;
+    
+    const poll = async () => {
+        try {
+            const response = await fetch(`/api/task/${taskId}/status`);
+            const task = await response.json();
+            
+            console.log(`📊 任务状态: ${task.status} (${task.progress || 0}%)`);
+            
+            // 更新进度显示
+            if (task.progress !== undefined) {
+                showProgress(true, `正在扫描... ${task.progress}% - ${task.status}`);
+            } else {
+                showProgress(true, `正在扫描... 状态：${task.status}`);
+            }
+            
+            if (task.status === 'completed') {
+                showProgress(false);
+                showNotification('✅ 扫描完成！正在加载结果...', 'success');
+                
+                // 加载完整结果
+                await loadTaskResult(taskId);
+                refreshQueueStats();
+                loadScanHistory();
+                return;
+            } else if (task.status === 'failed') {
+                showProgress(false);
+                showNotification(`❌ 扫描失败：${task.error_message || '未知错误'}`, 'error');
+                alert(`扫描失败：${task.error_message || '未知错误'}`);
+                return;
+            }
+            
+            attempts++;
+            if (attempts < maxAttempts) {
+                setTimeout(poll, 2000); // 2 秒后再次轮询
+            } else {
+                showProgress(false);
+                showNotification('⏱️ 扫描超时，请手动刷新查看结果', 'warning');
+            }
+        } catch (error) {
+            console.error('轮询任务状态失败:', error);
+            attempts++;
+            if (attempts < maxAttempts) {
+                setTimeout(poll, 2000);
+            }
+        }
+    };
+    
+    poll();
 }
 
 // ============================================================
@@ -457,15 +533,15 @@ async function loadTaskResult(taskId) {
         
         // 轮询直到任务完成
         while (true) {
-            const response = await fetch(`/api/task/${taskId}`);
+            const response = await fetch(`/api/task/${taskId}/status`);
             const task = await response.json();
             
             if (task.status === 'completed') {
                 // 获取完整结果
-                const resultResponse = await fetch(`/api/task/${taskId}`);
+                const resultResponse = await fetch(`/api/task/${taskId}/result`);
                 const result = await resultResponse.json();
                 
-                displayScanResult(result.result);
+                displayScanResult(result);
                 showProgress(false);
                 break;
             } else if (task.status === 'failed') {
@@ -1138,7 +1214,7 @@ async function exportPDF() {
                 </style>
             </head>
             <body>
-                <h1>🦞 固件漏洞扫描报告</h1>
+                <h1>🐢 固件漏洞扫描报告</h1>
                 <p><strong>扫描 ID:</strong> ${currentScanId}</p>
                 <p><strong>扫描时间:</strong> ${new Date().toLocaleString('zh-CN')}</p>
                 
@@ -1244,18 +1320,20 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-// 添加动画 CSS
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100%); opacity: 0; }
-    }
-    .text-danger { color: #dc3545; font-weight: bold; }
-    .text-warning { color: #fd7e14; font-weight: bold; }
-`;
-document.head.appendChild(style);
+// 添加动画 CSS（使用立即执行函数避免全局变量冲突）
+(function() {
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        .text-danger { color: #dc3545; font-weight: bold; }
+        .text-warning { color: #fd7e14; font-weight: bold; }
+    `;
+    document.head.appendChild(style);
+})();

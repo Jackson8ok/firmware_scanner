@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>固件漏洞扫描平台 v2.3</title>
+    <title>🐢 玄武 - 固件漏洞扫描平台 v2.4.1</title>
     <link rel="stylesheet" href="/static/styles.css">
     
     <!-- WebSocket 连接状态指示器样式 -->
@@ -101,7 +101,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>🦞 固件漏洞扫描平台</h1>
+            <h1>🐢 玄武 - 固件漏洞扫描平台</h1>
             <p class="subtitle">基于 Grype + Syft 的多架构固件安全分析 | v2.2 Dashboard 增强版</p>
         </header>
 
@@ -115,7 +115,7 @@
                     <h3>单个文件扫描</h3>
                     <form id="singleScanForm" enctype="multipart/form-data">
                         <div class="file-input-wrapper">
-                            <input type="file" id="firmwareFile" accept=".bin,.hex,.srec,.squashfs,.img" required>
+                            <input type="file" id="firmwareFile" accept=".bin,.hex,.srec,.squashfs,.img">
                             <label for="firmwareFile" class="custom-file-upload">
                                 📁 选择固件文件
                             </label>
@@ -355,11 +355,11 @@
         </footer>
     </div>
 
-    <!-- Socket.IO 客户端库（从服务器自动提供） -->
-    <script src="/socket.io/socket.io.js"></script>
+    <!-- Socket.IO 客户端库（CDN v4，兼容服务器 python-socketio 5.x） -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.min.js"></script>
     
     <!-- Socket.IO 实时通知客户端 -->
-    <script src="/static/socketio-client.js"></script>
+    <script src="/static/socketio-client.js?v=2.4.1"></script>
     
     <!-- jsPDF - 客户端 PDF 生成库 (CDN) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -379,11 +379,8 @@
     <!-- 增强的样式（新增） -->
     <link rel="stylesheet" href="/static/enhanced-styles.css">
     
-    <!-- WebSocket 实时通知（新增） -->
-    <script src="/static/websocket-client.js"></script>
-    
     <!-- 主应用逻辑 -->
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v=2.4.1-fix5"></script>
     
     <!-- R155 合规报告前端交互 -->
     <script src="/static/r155-ui.js"></script>

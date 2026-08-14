@@ -60,7 +60,7 @@ services:
     
     # 网络设置
     networks:
-      - pokeclaw-network
+      - xuanwu-network
     
     # 日志配置
     logging:
@@ -102,7 +102,7 @@ services:
   # ============================================
   nginx:
     image: nginx:alpine
-    container_name: pokeclaw-nginx
+    container_name: xuanwu-nginx
     restart: unless-stopped
     profiles: ["prod"]  # 生产环境专用
     
@@ -117,14 +117,14 @@ services:
     depends_on:
       - scanner
     networks:
-      - pokeclaw-network
+      - xuanwu-network
 
   # ============================================
   # Prometheus 监控（可选）
   # ============================================
   prometheus:
     image: prom/prometheus:latest
-    container_name: pokeclaw-prometheus
+    container_name: xuanwu-prometheus
     profiles: ["monitoring"]  # 监控专用
     restart: unless-stopped
     
@@ -141,7 +141,7 @@ services:
       - '--web.console.limits=prometheus:prometheus'
     
     networks:
-      - pokeclaw-network
+      - xuanwu-network
 
 volumes:
   data:
@@ -150,7 +150,7 @@ volumes:
     driver: local
 
 networks:
-  pokeclaw-network:
+  xuanwu-network:
     driver: bridge
 
 # ============================================
