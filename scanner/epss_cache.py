@@ -136,9 +136,9 @@ class EPSSCacheManager:
                     response.raise_for_status()
                     
                     import gzip
-                    import json
+                    import io
                     
-                    with gzip.open(response.content, 'rt', encoding='utf-8') as f:
+                    with gzip.open(io.BytesIO(response.content), 'rt', encoding='utf-8') as f:
                         data = json.load(f)
                     
                     return self._import_json_data(data)
@@ -253,7 +253,7 @@ class EPSSCacheManager:
             """, (datetime.now().isoformat(),))
             
             cursor.execute("""
-                INSERT OR REPLACE INTO episs_metadata (key, value)
+                INSERT OR REPLACE INTO epss_metadata (key, value)
                 VALUES ('total_records', ?)
             """, (str(inserted_count),))
             

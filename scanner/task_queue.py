@@ -38,6 +38,7 @@ import os
 import uuid
 import json
 import time
+import asyncio
 import sqlite3
 import threading
 import logging
@@ -49,10 +50,19 @@ from enum import Enum
 from concurrent.futures import ThreadPoolExecutor, Future
 import traceback
 
+# 导入配置
+try:
+    import yaml
+    with open(os.path.join(os.path.dirname(__file__), '..', 'config.yaml'), 'r', encoding='utf-8') as f:
+        config = yaml.safe_load(f)
+except Exception:
+    config = {}
+
 # 导入扫描引擎和合规检查器
 from .engine import FirmwareExtractor, SBOMGenerator, CVEMatcher
 from .r155_compliance import get_r155_checker
-from compliance.r155_rules import check_r155_compliance
+# ⚠️ 旧版 compliance/r155_rules 已废弃，请使用 scanner/r155_compliance
+# import check_r155_compliance from compliance.r155_rules
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -418,7 +428,7 @@ class ScanQueue:
             update_progress("sbom_generation", 35, "正在识别组件")
             
             sbom_gen = SBOMGenerator()
-            target_path = str(extracted_path) if extracted_path.is_dir() else str(extracted_path)
+            target_path = str(extracted_path)
             components = sbom_gen.generate_sbom(target_path, task.firmware_type)
             
             update_progress("sbom_generation", 55, f"识别到 {len(components)} 个组件")
@@ -426,12 +436,37 @@ class ScanQueue:
             # ========== 阶段 3: CVE 匹配 (进度 60-90%)
             update_progress("cve_matching", 65, "正在查询漏洞数据库")
             
-            # 配置 Grype DB 路径（从环境变量或默认路径）
-            grype_db_path = os.environ.get('GRYPE_DB_PATH', './data/grype.db')
+            # 配置 Grype 路径（优先 config.yaml，其次环境变量，最后默认路径）
+            grype_bin = config.get('paths', {}).get('grype_bin')
+            if grype_bin and '${' in grype_bin:
+                import re
+                for match in re.finditer(r'[\$]\{([^}:]+)(?::-([^}]*))?[\}]', grype_bin):
+                    var_name = match.group(1)
+                    default_val = match.group(2) if match.group(2) is not None else ''
+                    grype_bin = grype_bin.replace(match.group(0), os.environ.get(var_name, default_val))
+            if grype_bin:
+                grype_bin = os.path.expanduser(grype_bin)
+            else:
+                grype_bin = os.environ.get('GRYPE_BIN', '')
+            
+            grype_db_path = config.get('paths', {}).get('grype_db')
+            if grype_db_path and '${' in grype_db_path:
+                import re
+                for match in re.finditer(r'[\$]\{([^}:]+)(?::-([^}]*))?[\}]', grype_db_path):
+                    var_name = match.group(1)
+                    default_val = match.group(2) if match.group(2) is not None else ''
+                    grype_db_path = grype_db_path.replace(match.group(0), os.environ.get(var_name, default_val))
+            
+            if not grype_db_path:
+                grype_db_path = os.environ.get('GRYPE_DB_PATH', './data/grype.db')
+            
+            grype_db_path = os.path.expanduser(grype_db_path)
             
             if not os.path.exists(grype_db_path):
-                logger.warning(f"Grype DB 不存在：{grype_db_path}, 跳过 CVE 匹配")
+                logger.error(f"Grype DB 不存在：{grype_db_path}，无法进行 CVE 匹配")
                 vulnerabilities = []
+                # 标记 CVE 匹配阶段失败
+                update_progress("cve_matching", 90, "CVE 数据库缺失，漏洞匹配跳过")
             else:
                 matcher = CVEMatcher(grype_db_path)
                 vulnerabilities = matcher.query_vulnerabilities(components)
@@ -481,20 +516,41 @@ class ScanQueue:
                     'fixed_version': getattr(v, 'fixed_version', None)
                 })
             
-            # R155 合规检查 (备用方案)
+            # R155 合规检查 (使用统一的 scanner.r155_compliance 模块)
             try:
-                r155_report = check_r155_compliance(vuln_data_for_compliance)
+                checker = get_r155_checker()
+                r155_report = checker.check_compliance(
+                    firmware_id=task.task_id,
+                    firmware_name=task.filename,
+                    components=[c.to_dict() for c in components],
+                    vulnerabilities=[{
+                        'cve_id': v.cve_id,
+                        'component_name': v.component_name,
+                        'version': v.component_version,
+                        'severity': v.severity,
+                        'cvss_score': v.cvss_score,
+                        'description': v.description,
+                        'r155_non_compliant': False  # 稍后填充
+                    } for v in vulnerabilities],
+                    scan_time=datetime.now().isoformat()
+                )
+                if hasattr(r155_report, 'to_dict'):
+                    r155_report = r155_report.to_dict()
+                
+                # 使用第一次检查的结果
+                compliance_dict = r155_report
             except Exception as e:
-                logger.warning(f"R155 合规检查失败：{e}")
+                logger.warning(f"R155 补充检查失败：{e}")
                 r155_report = {
                     'compliance_score': 100.0,
                     'violations': [],
                     'category_scores': {},
-                    'recommendations': ['无法进行合规检查']
+                    'recommendations': ['无法进行补充合规检查']
                 }
+                compliance_dict = r155_report
             
             # 计算每个 CVE 的 R155 合规状态
-            violating_cves = {v['cve_id'] for v in r155_report.get('violations', [])}
+            violating_cves = {v.get('cve_id', '') for v in r155_report.get('violations', [])}
             
             # 构建结果对象 - r155_compliance 字段使用统一的 dict 格式
             result = {
@@ -687,7 +743,7 @@ class ScanQueue:
             except Exception as e:
                 logger.error(f"WebSocket 通知发送失败：{e}")
     
-    def wait_for_completion(self, task_id: str, poll_interval: float = 1.0) -> Optional[ScanTask]:
+    async def wait_for_completion(self, task_id: str, poll_interval: float = 1.0) -> Optional[ScanTask]:
         """等待任务完成"""
         while True:
             task = self.get_task_status(task_id)
@@ -698,7 +754,7 @@ class ScanQueue:
             if task.status in [TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED]:
                 return task
             
-            time.sleep(poll_interval)
+            await asyncio.sleep(poll_interval)
     
     def close(self):
         """关闭资源"""
@@ -722,51 +778,52 @@ def get_scan_queue(max_concurrent: int = 3) -> ScanQueue:
 
 
 # 便捷函数
-def scan_firmware(firmware_path: str, firmware_type: str) -> str:
-    """快速扫描单个固件（阻塞式）"""
+async def scan_firmware(firmware_path: str, firmware_type: str) -> str:
+    """快速扫描单个固件（异步）"""
     queue = get_scan_queue()
     task_id = queue.add_task(firmware_path, firmware_type)
-    task = queue.wait_for_completion(task_id)
+    task = await queue.wait_for_completion(task_id)
     return task_id if task else None
 
 
 if __name__ == "__main__":
-    # 测试运行
     import sys
     
-    print("=" * 60)
-    print("扫描队列测试工具")
-    print("=" * 60)
-    
-    queue = ScanQueue(max_concurrent=2)
-    queue.start()
-    
-    # 演示添加任务
-    if len(sys.argv) > 1:
-        firmware_path = sys.argv[1]
-        firmware_type = sys.argv[2] if len(sys.argv) > 2 else "bin"
+    async def main():
+        print("=" * 60)
+        print("扫描队列测试工具")
+        print("=" * 60)
         
-        print(f"\n正在扫描：{firmware_path} ({firmware_type})")
-        task_id = queue.add_task(firmware_path, firmware_type)
+        queue = ScanQueue(max_concurrent=2)
+        queue.start()
         
-        print(f"任务 ID: {task_id}")
-        print("\n等待完成...")
-        
-        task = queue.wait_for_completion(task_id)
-        
-        if task:
-            print(f"\n最终状态：{task.status.value}")
-            print(f"进度：{task.progress}%")
+        if len(sys.argv) > 1:
+            firmware_path = sys.argv[1]
+            firmware_type = sys.argv[2] if len(sys.argv) > 2 else "bin"
             
-            if task.result:
-                print(f"\n扫描结果:")
-                print(f"  组件数：{len(task.result.get('components', []))}")
-                print(f"  CVE 数：{task.result.get('total_cves', 0)}")
-            elif task.error_message:
-                print(f"\n错误信息:\n{task.error_message[:500]}")
-    else:
-        print("\n用法：python task_queue.py <firmware_path> [firmware_type]")
-        print("示例：python task_queue.py ./test.bin bin")
+            print(f"\n正在扫描：{firmware_path} ({firmware_type})")
+            task_id = queue.add_task(firmware_path, firmware_type)
+            
+            print(f"任务 ID: {task_id}")
+            print("\n等待完成...")
+            
+            task = await queue.wait_for_completion(task_id)
+            
+            if task:
+                print(f"\n最终状态：{task.status.value}")
+                print(f"进度：{task.progress}%")
+                
+                if task.result:
+                    print(f"\n扫描结果:")
+                    print(f"  组件数：{len(task.result.get('components', []))}")
+                    print(f"  CVE 数：{task.result.get('total_cves', 0)}")
+                elif task.error_message:
+                    print(f"\n错误信息:\n{task.error_message[:500]}")
+        else:
+            print("\n用法：python task_queue.py <firmware_path> [firmware_type]")
+            print("示例：python task_queue.py ./test.bin bin")
+        
+        queue.close()
+        print("\n测试完成")
     
-    queue.close()
-    print("\n测试完成")
+    asyncio.run(main())

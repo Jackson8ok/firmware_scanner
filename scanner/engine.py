@@ -9,6 +9,7 @@ import subprocess
 import hashlib
 import sqlite3
 import shutil
+import json
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional, NamedTuple
 from dataclasses import dataclass
@@ -74,7 +75,7 @@ class Component:
 
 
 @dataclass
-class ExtractedFile(NamedTuple):
+class ExtractedFile:
     """Binwalk 提取的文件信息"""
     offset: int
     description: str
@@ -100,6 +101,9 @@ class Vulnerability:
     def is_r155_non_compliant(self, days_threshold: int = 180):
         """检查是否 R155 不合规 (CVSS>=7.0 且>180 天未修复)"""
         if self.cvss_score < 7.0:
+            return False
+        if self.published_date is None:
+            # 未知发布日期时不做超期判定，避免误报
             return False
         age_days = (datetime.now() - self.published_date).days
         return age_days > days_threshold and not self.fixed_version
@@ -190,6 +194,16 @@ class FirmwareExtractor:
     def extract_firmware(self, firmware_path: str) -> Path:
         """智能解包固件（优先 Binwalk，自动选择最佳方案）"""
         logger.info(f"解包固件：{firmware_path}")
+        firmware_path_obj = Path(firmware_path)
+        
+        # 特殊处理 HEX/SREC 文件
+        if firmware_path_obj.suffix.lower() in ('.hex', '.srec', '.ihex', '.s19'):
+            logger.info(f"检测到 HEX/SREC 文件，转换为二进制...")
+            bin_path = self.hex_to_bin(firmware_path)
+            if bin_path.exists() and bin_path != firmware_path_obj and bin_path.stat().st_size > 0:
+                return bin_path
+            # 如果转换失败或输出为空，继续正常解包流程
+            logger.warning("HEX/SREC 转换失败或输出为空，继续正常解包流程")
         
         # 1. 优先使用 Binwalk（推荐）
         if self.binwalk_available:
@@ -211,9 +225,9 @@ class FirmwareExtractor:
             if extracted_path.exists():
                 return extracted_path
         
-        # 4. 最后手段：返回原文件目录
+        # 4. 最后手段：返回原文件所在目录（而非 . 目录）
         logger.warning("所有解包方法失败，使用原始文件")
-        return Path(firmware_path).parent
+        return firmware_path_obj.parent
     
     def extract_with_binwalk(self, firmware_path: str) -> Path:
         """使用 Binwalk 解包固件（推荐方式）"""
@@ -740,7 +754,7 @@ class CVEMatcher:
         return vulnerabilities
     
     def _query_component(self, component: Component) -> List[Vulnerability]:
-        """查询单个组件的漏洞（优化版）"""
+        """查询单个组件的漏洞（适配 Grype v6 schema）"""
         vulns = []
         
         if not component.name:
@@ -749,7 +763,7 @@ class CVEMatcher:
         try:
             cursor = self.conn.cursor()
             
-            # 尝试多种匹配策略
+            # 适配 Grype v6 schema: packages, vulnerability_handles, affected_package_handles, blobs
             search_patterns = [
                 f'%{component.name}%',
                 f'{component.name}',
@@ -758,50 +772,75 @@ class CVEMatcher:
             
             for pattern in search_patterns:
                 cursor.execute("""
-                    SELECT p.id, p.name, p.version, p.type
-                    FROM package p
+                    SELECT 
+                        vh.id as vuln_id,
+                        vh.name as cve_id,
+                        vh.published_date,
+                        vh.status,
+                        b.value as blob_json,
+                        p.name as pkg_name
+                    FROM affected_package_handles aph
+                    JOIN vulnerability_handles vh ON aph.vulnerability_id = vh.id
+                    JOIN blobs b ON vh.blob_id = b.id
+                    JOIN packages p ON aph.package_id = p.id
                     WHERE LOWER(p.name) LIKE LOWER(?)
-                    LIMIT 5
+                    LIMIT 50
                 """, (pattern,))
                 
-                packages = cursor.fetchall()
+                rows = cursor.fetchall()
                 
-                for pkg in packages:
-                    # 模糊版本匹配
-                    version_match = self._match_version(component.version, pkg['version'])
-                    if not version_match:
+                for row in rows:
+                    # 跳过已撤销的漏洞
+                    if row['status'] == 'withdrawn':
                         continue
                     
-                    # 查找关联的漏洞
-                    cursor.execute("""
-                        SELECT DISTINCT v.cve, v.severity, v.cvss_score, v.cvss_vector,
-                               v.description, v.fixed_version, v.published_date
-                        FROM vulnerability v
-                        JOIN package_vulnerability pv ON v.id = pv.vulnerability_id
-                        WHERE pv.package_id = ?
-                        AND (v.severity IN ('Critical', 'High', 'Medium') OR v.cvss_score >= 5.0)
-                        ORDER BY v.cvss_score DESC
-                        LIMIT 50
-                    """, (pkg['id'],))
+                    # 从 blob_json 解析详细信息
+                    try:
+                        blob_data = json.loads(row['blob_json'] or '{}')
+                    except json.JSONDecodeError:
+                        continue
                     
-                    for row in cursor.fetchall():
-                        vuln = Vulnerability(
-                            cve_id=row['cve'],
-                            component_name=component.name,
-                            component_version=component.version,
-                            severity=row['severity'] or 'Unknown',
-                            cvss_score=float(row['cvss_score']) if row['cvss_score'] else 0.0,
-                            cvss_vector=row['cvss_vector'] or '',
-                            description=row['description'] or '',
-                            fixed_version=row['fixed_version'],
-                            published_date=datetime.strptime(row['published_date'], '%Y-%m-%d')
-                                           if row['published_date'] else datetime.now()
-                        )
-                        
-                        # 避免重复
-                        if not any(v.cve_id == vuln.cve_id for v in vulns):
-                            vuln.epss_score = self._get_epss_score_cached(vuln.cve_id)
-                            vulns.append(vuln)
+                    description = blob_data.get('description', '')
+                    
+                    # 解析 severity 和 CVSS 信息
+                    severity = 'Unknown'
+                    cvss_score = 0.0
+                    cvss_vector = ''
+                    
+                    severities = blob_data.get('severities', [])
+                    for sev in severities:
+                        if sev.get('scheme') == 'CVSS':
+                            value = sev.get('value')
+                            if isinstance(value, dict):
+                                cvss_vector = value.get('vector', '')
+                                # Grype v6 不直接存储 base_score，从 description 尝试提取
+                                cvss_score = self._extract_cvss_score(description)
+                                # 尝试从 CVSS vector 推断 severity
+                                severity = self._infer_severity_from_cvss_vector(cvss_vector)
+                            elif isinstance(value, str):
+                                # 某些 provider 直接返回 severity 字符串
+                                severity = value.capitalize()
+                    
+                    # 如果没有从 severities 获取到 severity，尝试从 description 推断
+                    if severity == 'Unknown':
+                        severity = self._infer_severity_from_description(description)
+                    
+                    vuln = Vulnerability(
+                        cve_id=row['cve_id'],
+                        component_name=component.name,
+                        component_version=component.version or 'unknown',
+                        severity=severity,
+                        cvss_score=cvss_score,
+                        cvss_vector=cvss_vector,
+                        description=description,
+                        fixed_version=None,
+                        published_date=self._parse_date(row['published_date'])
+                    )
+                    
+                    # 避免重复
+                    if not any(v.cve_id == vuln.cve_id for v in vulns):
+                        vuln.epss_score = self._get_epss_score_cached(vuln.cve_id)
+                        vulns.append(vuln)
             
         except sqlite3.Error as e:
             logger.error(f"查询 CVE 失败 ({component.name}): {e}")
@@ -810,15 +849,105 @@ class CVEMatcher:
         return vulns
     
     def _match_version(self, target_version: str, db_version: str) -> bool:
-        """版本匹配逻辑（简化版）"""
+        """版本匹配逻辑（优化版 - 避免 unknown 版本误报）"""
         if not target_version or target_version == 'unknown':
-            return True  # 未知版本时匹配所有
+            # 保守策略：未知版本时不进行宽松匹配
+            # 只对已知的高风险组件版本进行警告，避免海量误报
+            # 标记为"需要人工审核"，而非直接判定为存在 CVE
+            return False  # 不匹配，由人工审核环节处理
         
         try:
             # 简单的前缀匹配
             return db_version.startswith(target_version.split('-')[0][:4])
         except:
-            return True
+            return False  # 匹配失败也返回 False，避免误报
+    
+    def _extract_cvss_score(self, description: str) -> float:
+        """从 description 文本中提取 CVSS base score"""
+        if not description:
+            return 0.0
+        
+        import re
+        # 匹配 "CVSS v3.0 Base Score 7.5" 或 "CVSS v2.0 Base Score 5.0"
+        match = re.search(r'CVSS\s+v[23]\.\d+\s+Base\s+Score\s+([\d\.]+)', description, re.IGNORECASE)
+        if match:
+            try:
+                score = float(match.group(1))
+                return min(max(score, 0.0), 10.0)
+            except ValueError:
+                pass
+        return 0.0
+    
+    def _infer_severity_from_cvss_vector(self, cvss_vector: str) -> str:
+        """从 CVSS vector 推断 severity 等级"""
+        if not cvss_vector:
+            return 'Unknown'
+        
+        # 简单解析 CVSS v3.x vector
+        # 格式: CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+        try:
+            parts = dict(p.split(':') for p in cvss_vector.split('/') if ':' in p)
+            
+            # 评估影响指标
+            c = parts.get('C', 'L')  # Confidentiality
+            i = parts.get('I', 'L')  # Integrity
+            a = parts.get('A', 'L')  # Availability
+            
+            # 评估攻击复杂度
+            ac = parts.get('AC', 'L')
+            
+            # 评估权限要求
+            pr = parts.get('PR', 'N')
+            
+            # 简单规则
+            high_impact = c == 'H' or i == 'H' or a == 'H'
+            low_complexity = ac == 'L'
+            no_privilege = pr == 'N'
+            
+            if high_impact and low_complexity and no_privilege:
+                return 'Critical'
+            elif high_impact or (low_complexity and no_privilege):
+                return 'High'
+            elif ac == 'M' or pr == 'L':
+                return 'Medium'
+            else:
+                return 'Low'
+        except Exception:
+            return 'Unknown'
+    
+    def _infer_severity_from_description(self, description: str) -> str:
+        """从 description 文本中推断 severity"""
+        if not description:
+            return 'Unknown'
+        
+        desc_lower = description.lower()
+        if any(word in desc_lower for word in ['critical', 'remotely exploitable', 'unauthenticated']):
+            return 'Critical'
+        elif any(word in desc_lower for word in ['high', 'privilege escalation', 'code execution']):
+            return 'High'
+        elif any(word in desc_lower for word in ['medium', 'moderate', 'denial of service']):
+            return 'Medium'
+        elif any(word in desc_lower for word in ['low', 'information disclosure']):
+            return 'Low'
+        return 'Unknown'
+    
+    def _parse_date(self, date_str: Optional[str]) -> Optional[datetime]:
+        """解析日期字符串"""
+        if not date_str:
+            return None
+        try:
+            # Grype v6 日期格式: 1999-12-30 05:00:00+00:00
+            if isinstance(date_str, datetime):
+                return date_str
+            # 尝试多种格式
+            for fmt in ('%Y-%m-%d %H:%M:%S%z', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d'):
+                try:
+                    return datetime.strptime(date_str, fmt)
+                except ValueError:
+                    continue
+            return None
+        except Exception:
+            return None
     
     def _get_epss_score_cached(self, cve_id: str) -> Optional[float]:
         """获取 EPSS 分数（使用本地缓存）"""

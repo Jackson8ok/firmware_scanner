@@ -918,9 +918,6 @@ async function generateClientSidePDF(scanId) {
         throw error;
     }
 }
-        btn.disabled = false;
-    }
-});
 
 document.getElementById('exportExcelBtn')?.addEventListener('click', async () => {
     if (!currentScanId) {
@@ -963,29 +960,6 @@ document.getElementById('exportExcelBtn')?.addEventListener('click', async () =>
     } finally {
         btn.textContent = originalText;
         btn.disabled = false;
-    }
-});
-            let endpoint = `/api/reports/${currentScanId}`;
-            
-            const response = await fetch(endpoint);
-            
-            if (response.ok) {
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${currentScanId}_report.yaml`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-            } else {
-                const error = await response.json();
-                alert(`导出失败：${error.detail}`);
-            }
-        }
-    } catch (error) {
-        alert(`导出失败：${error.message}`);
     }
 });
 

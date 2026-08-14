@@ -24,13 +24,10 @@ pip install -r requirements.txt
 # 3️⃣ 安装 Node.js 服务依赖
 cd services/node-report && npm install && cd ../..
 
-# 4️⃣ 下载 Grype 数据库 (~2GB)
-./scripts/download_grype_db.sh ./grype-db
+# 4️⃣ 初始化 Grype（内置方案，自动下载 DB）
+bash scripts/setup_grype.sh
 
-# 5️⃣ 配置数据库路径
-vim config.yaml  # 修改 grype_db 路径
-
-# 6️⃣ 启动服务
+# 5️⃣ 启动服务
 ./scripts/startup.sh
 ```
 

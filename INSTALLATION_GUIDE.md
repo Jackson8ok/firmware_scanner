@@ -196,26 +196,26 @@ sudo apt install binutils  # 包含 objcopy, strings
 
 ---
 
-## 步骤 5: 下载 Grype 漏洞数据库
+## 步骤 5: 初始化 Grype（内置方案）
 
-**重要**: Grype v6 SQLite DB 约 2GB，需要预先下载
+项目已内置 Grype v0.117.0，无需单独安装。只需下载漏洞数据库：
 
 ```bash
 cd firmware_scanner
-./scripts/download_grype_db.sh ./grype-db
+bash scripts/setup_grype.sh
 ```
 
-**手动下载** (如果脚本失败):
+该脚本会自动：
+1. 检查 `tools/grype/grype` 是否已存在
+2. 下载 Grype v6 SQLite 数据库到 `db/grype/`
+3. 配置环境变量（如需自定义路径，见下方说明）
+
+**自定义路径（可选）**:
 ```bash
-mkdir -p grype-db
-cd grype-db
-
-wget https://toolbox-data.anchore.io/grype/databases/vulnerability-db_v6_latest.tar.gz
-tar xzf vulnerability-db_v6_latest.tar.gz
-rm vulnerability-db_v6_latest.tar.gz
-
-# 应该得到 grype.db
-ls -lh grype.db  # ~2GB
+# 使用环境变量覆盖默认路径
+export GRYPE_BIN=/custom/path/grype
+export GRYPE_DB_PATH=/custom/path/vulnerability.db
+bash scripts/setup_grype.sh
 ```
 
 ---
@@ -230,8 +230,9 @@ server:
   port: 8765
 
 paths:
-  # ⚠️ 修改为实际路径
-  grype_db: "/mnt/workspace/firmware_scanner/grype-db/vulnerability.db"
+  # Grype 路径（内置，通常无需修改）
+  grype_bin: "${GRYPE_BIN:-./tools/grype/grype}"
+  grype_db: "${GRYPE_DB_PATH:-./db/grype/6/vulnerability.db}"
   
   uploads: "./uploads"
   workspace: "./workspace"
@@ -241,7 +242,8 @@ paths:
 **Windows 示例**:
 ```yaml
 paths:
-  grype_db: "C:/workspace/firmware_scanner/grype-db/vulnerability.db"
+  grype_bin: "C:/workspace/firmware_scanner/tools/grype/grype.exe"
+  grype_db: "C:/workspace/firmware_scanner/db/grype/6/vulnerability.db"
 ```
 
 ---

@@ -146,7 +146,7 @@ const DashboardState = {
             </div>
         `;
         
-        this showModal(html);
+        this.showModal(html);
     },
     
     // ============================================================

@@ -24,7 +24,7 @@ import numpy as np
 
 # 导入项目模块
 try:
-    from scanner.task_queue import TaskQueue
+    from scanner.task_queue import ScanQueue
 except ImportError:
     pass
 

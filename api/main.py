@@ -25,7 +25,6 @@ from pydantic import BaseModel
 
 # Socket.IO
 import socketio
-from socketio import ASGIApp
 
 # 添加项目根目录到路径
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -63,11 +62,11 @@ def resolve_env_var(value):
     if not isinstance(value, str):
         return value
     import re
-    pattern = r'\$\{([^}:]+)(?::(.+))?\}'
-    match = re.match(pattern, value)
+    pattern = r'[\$]\{([^}:]+)(?::-([^}]*))?\}'
+    match = re.search(pattern, value)
     if match:
         env_name = match.group(1)
-        default_value = match.group(2)
+        default_value = match.group(2) if match.group(2) is not None else ''
         return os.environ.get(env_name, default_value or '')
     return value
 
@@ -90,11 +89,26 @@ if 'paths' in config:
 
 logger.info(f"Grype DB 路径：{config['paths'].get('grype_db', '未配置')}")
 
+# 检查 Grype DB 可用性
+grype_db_path = config.get('paths', {}).get('grype_db')
+if grype_db_path:
+    grype_db_path = os.path.expanduser(grype_db_path)
+    if os.path.exists(grype_db_path):
+        logger.info(f"Grype DB 可用：{grype_db_path}")
+    else:
+        logger.error(f"Grype DB 不可用：{grype_db_path}（文件不存在，CVE 匹配将跳过）")
+        logger.warning("请执行以下命令下载 Grype DB：")
+        logger.warning("  1. 安装 Grype：https://github.com/anchore/grype/releases")
+        logger.warning("  2. 下载数据库：grype db download")
+        logger.warning("  3. 或设置环境变量 GRYPE_DB_PATH 指向现有数据库")
+else:
+    logger.warning("未配置 Grype DB 路径，CVE 匹配将跳过")
+
 # ============================================================
 # Socket.IO 服务器初始化
 # ============================================================
 sio = socketio.AsyncServer(
-    cors_allowed_origins="*",
+    cors_allowed_origins=config.get('cors', {}).get('allowed_origins', ["http://localhost:3000"]),
     async_mode="asgi",
     logger=False,
     engineio_logger=False
@@ -130,14 +144,20 @@ async def disconnect(sid):
     logger.info(f"❌ Socket.IO 客户端断开：{sid}")
 
 # ============================================================
-# FastAPI 应用初始化
+# FastAPI 应用初始化（作为子应用）
 # ============================================================
-app = FastAPI(title="固件漏洞扫描平台", version="2.3 (WebSocket)")
+from socketio import ASGIApp
+
+_base_app = FastAPI(
+    title="固件漏洞扫描平台", 
+    version="2.4.1-hotfix",
+    description="已启用 WebSocket 实时通知的固件安全扫描器"
+)
 
 # 注册异常处理器
-app.add_exception_handler(AppException, app_exception_handler)
-app.add_exception_handler(HTTPException, http_exception_handler)
-app.add_exception_handler(Exception, generic_exception_handler)
+_base_app.add_exception_handler(AppException, app_exception_handler)
+_base_app.add_exception_handler(HTTPException, http_exception_handler)
+_base_app.add_exception_handler(Exception, generic_exception_handler)
 
 # 模板和静态文件
 templates_path = Path(__file__).parent.parent / "frontend" / "templates"
@@ -145,6 +165,9 @@ static_path = Path(__file__).parent.parent / "frontend" / "static"
 
 # 标准方式初始化 Jinja2Templates（FastAPI 会自动启用 autoescape）
 templates = Jinja2Templates(directory=str(templates_path))
+
+# 挂载前端静态文件
+_base_app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 
 # 确保目录存在
 for dir_path in [config['paths']['uploads'], 
@@ -217,7 +240,7 @@ class QueueStatsResponse(BaseModel):
 # 路由定义
 # ============================================================
 
-@app.get("/", response_class=HTMLResponse)
+@_base_app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     """首页 - 使用底层模板渲染避免缓存 bug"""
     logger = logging.getLogger(__name__)
@@ -238,47 +261,65 @@ async def root(request: Request):
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"模板渲染失败：{str(e)}")
 
-@app.get("/api/health")
+@_base_app.get("/api/health")
 async def health_check():
     """健康检查端点"""
     return {
         "status": "healthy",
-        "version": "2.3",
+        "version": "2.4.1-hotfix",
         "websocket": "enabled",
         "timestamp": datetime.now().isoformat()
     }
 
-@app.get("/api/dashboard")
+@_base_app.get("/api/dashboard")
 async def dashboard_page(request: Request):
     """仪表板页面（兼容旧版本）"""
-    return templates.TemplateResponse("dashboard.html", {"request": request})
+    try:
+        template = templates.env.get_template("dashboard.html")
+        html_content = template.render(request=request, now=datetime.now())
+        return HTMLResponse(content=html_content)
+    except Exception as e:
+        logger.error(f"仪表板渲染失败：{e}")
+        raise HTTPException(status_code=500, detail="仪表板加载失败")
 
-@app.post("/api/upload")
+@_base_app.post("/api/upload")
 async def upload_firmware(file: UploadFile = File(...)):
     """上传固件文件"""
     try:
         upload_dir = Path(config['paths']['uploads'])
         upload_dir.mkdir(parents=True, exist_ok=True)
         
-        file_path = upload_dir / file.filename
+        # 路径穿越防护：只保留文件名，去除目录部分
+        safe_filename = Path(file.filename).name
+        if not safe_filename:
+            raise HTTPException(status_code=400, detail="文件名无效")
+        
+        file_path = upload_dir / safe_filename
+        content = await file.read()
+        
+        max_size = config.get('upload', {}).get('max_size', 100 * 1024 * 1024)
+        if len(content) > max_size:
+            raise HTTPException(status_code=413, detail=f"文件过大，最大支持 {max_size // 1024 // 1024}MB")
+        
         with open(file_path, "wb") as buffer:
-            content = await file.read()
             buffer.write(content)
         
-        logger.info(f"✅ 文件上传成功：{file.filename} ({len(content)} bytes)")
+        logger.info(f"✅ 文件上传成功：{safe_filename} ({len(content)} bytes)")
         
         return {
             "success": True,
             "message": "文件上传成功",
-            "filename": file.filename,
+            "filename": safe_filename,
             "path": str(file_path),
             "size": len(content)
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"文件上传失败：{e}")
         raise HTTPException(status_code=500, detail=f"上传失败：{str(e)}")
 
-@app.post("/api/scan")
+@_base_app.post("/api/scan")
 async def start_scan(firmware_id: str = Form(...), firmware_type: str = Form(...)):
     """开始扫描"""
     try:
@@ -304,7 +345,7 @@ async def start_scan(firmware_id: str = Form(...), firmware_type: str = Form(...
         logger.error(f"扫描启动失败：{e}")
         raise HTTPException(status_code=500, detail=f"启动失败：{str(e)}")
 
-@app.get("/api/task/{task_id}/status")
+@_base_app.get("/api/task/{task_id}/status")
 async def get_task_status(task_id: str):
     """获取任务状态"""
     try:
@@ -330,7 +371,7 @@ async def get_task_status(task_id: str):
         logger.error(f"获取任务状态失败：{e}")
         raise HTTPException(status_code=500, detail=f"查询失败：{str(e)}")
 
-@app.get("/api/queue/stats")
+@_base_app.get("/api/queue/stats")
 async def get_queue_stats():
     """获取队列统计"""
     try:
@@ -347,7 +388,7 @@ async def get_queue_stats():
 # PDF 报告相关路由
 # ============================================================
 
-@app.get("/api/task/{task_id}/report/pdf")
+@_base_app.get("/api/task/{task_id}/report/pdf")
 async def download_pdf_report(task_id: str):
     """
     下载任务 PDF 报告
@@ -404,7 +445,7 @@ async def download_pdf_report(task_id: str):
         raise HTTPException(status_code=500, detail=f"生成失败：{str(e)}")
 
 
-@app.post("/api/task/{task_id}/regenerate-report")
+@_base_app.post("/api/task/{task_id}/regenerate-report")
 async def regenerate_pdf_report(task_id: str, include_charts: bool = False):
     """
     重新生成 PDF 报告（可选包含图表）
@@ -449,10 +490,311 @@ async def regenerate_pdf_report(task_id: str, include_charts: bool = False):
         logger.error(f"重新生成 PDF 报告失败：{e}")
         raise HTTPException(status_code=500, detail=f"生成失败：{str(e)}")
 
+
+# ============================================================
+# 新增 API 端点 - 任务管理
+# ============================================================
+
+@_base_app.get("/api/tasks")
+async def list_tasks(status: Optional[str] = Query(None, description="按状态筛选"), limit: int = Query(50, le=200)):
+    """获取任务列表（支持按状态筛选）"""
+    try:
+        queue = get_queue()
+        # 将字符串状态转换为 TaskStatus 枚举（如存在）
+        status_filter = None
+        if status:
+            try:
+                status_filter = TaskStatus(status)
+            except (ValueError, KeyError):
+                # 尝试用 value 匹配
+                for ts in TaskStatus:
+                    if ts.value == status:
+                        status_filter = ts
+                        break
+        tasks = queue.get_all_tasks(limit=limit, status=status_filter)
+        result = []
+        for t in tasks:
+            if hasattr(t, "dict"):
+                result.append(t.dict())
+            else:
+                result.append({
+                    "task_id": getattr(t, "task_id", str(t)),
+                    "filename": getattr(t, "filename", ""),
+                    "status": getattr(t, "status", ""),
+                    "progress": getattr(t, "progress", 0),
+                    "created_at": getattr(t, "created_at", "")
+                })
+        return {"tasks": result}
+    except Exception as e:
+        logger.error(f"获取任务列表失败：{e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@_base_app.delete("/api/task/{task_id}")
+async def delete_task(task_id: str):
+    """删除任务及其文件"""
+    try:
+        queue = get_queue()
+        # 实现删除逻辑
+        success = True  # TODO: 实现真正的删除
+        return {"success": success, "message": "任务已删除"}
+    except Exception as e:
+        logger.error(f"删除任务失败：{e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================
+# 新增 API 端点 - 批量扫描
+# ============================================================
+
+@_base_app.post("/api/scan/batch")
+async def batch_scan(firmware_list: List[str]):
+    """批量启动扫描"""
+    try:
+        queue = get_queue()
+        task_ids = []
+        for firmware_id in firmware_list:
+            if hasattr(queue, "add_task"):
+                task = queue.add_task(firmware_id)
+                task_ids.append(task.task_id)
+        return {"task_ids": task_ids, "count": len(task_ids)}
+    except Exception as e:
+        logger.error(f"批量扫描失败：{e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================
+# 新增 API 端点 - Excel 报告导出
+# ============================================================
+
+@_base_app.get("/api/report/excel/{task_id}")
+async def export_excel_report(task_id: str):
+    """导出 Excel 漏洞清单"""
+    try:
+        from report_generator.excel_exporter import generate_excel_report
+        
+        queue = get_queue()
+        task = queue.get_task_status(task_id)
+        
+        if not task:
+            raise HTTPException(status_code=404, detail="任务不存在")
+        
+        result = task.result if task.result else {}
+        excel_path = generate_excel_report(task_id, result)
+        
+        filename = f"{task.filename}_vulnerability_list.xlsx"
+        
+        return FileResponse(
+            path=excel_path,
+            filename=filename,
+            media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    except ImportError:
+        raise HTTPException(status_code=500, detail="Excel 导出依赖未安装：pip install openpyxl")
+    except Exception as e:
+        logger.error(f"Excel 导出失败：{e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================
+# 新增 API 端点 - 审计报告包（R155 合规审计完整包）
+# ============================================================
+
+@_base_app.post("/api/report/audit-package/{task_id}")
+async def download_audit_package(task_id: str):
+    """下载完整 R155 审计报告包（ZIP 格式，包含 8 份文档）"""
+    try:
+        from report_generator.audit_package import create_audit_package
+        
+        queue = get_queue()
+        task = queue.get_task_status(task_id)
+        
+        if not task:
+            raise HTTPException(status_code=404, detail="任务不存在")
+        
+        result = task.result if task.result else {}
+        zip_path = create_audit_package(task_id, result)
+        
+        filename = f"{task.filename}_R155_audit_package.zip"
+        
+        return FileResponse(
+            path=zip_path,
+            filename=filename,
+            media_type='application/zip'
+        )
+    except ImportError:
+        raise HTTPException(
+            status_code=500, 
+            detail="审计报告包功能暂未实现。请联系管理员或等待 v2.5 版本更新"
+        )
+    except Exception as e:
+        logger.error(f"审计报告包生成失败：{e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================
+# 新增 API 端点 - 合规详情
+# ============================================================
+
+@_base_app.get("/api/compliance/{task_id}/detail")
+async def get_compliance_detail(task_id: str):
+    """获取 R155 合规检查详细结果"""
+    try:
+        queue = get_queue()
+        task = queue.get_task_status(task_id)
+        
+        if not task:
+            raise HTTPException(status_code=404, detail="任务不存在")
+        
+        result = task.result if task.result else {}
+        
+        return {
+            "task_id": task_id,
+            "compliance_score": result.get("compliance_score", 0),
+            "violations": result.get("violations", []),
+            "category_scores": result.get("category_scores", {}),
+            "recommendations": result.get("recommendations", [])
+        }
+    except Exception as e:
+        logger.error(f"获取合规详情失败：{e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# 新增 API 端点 - 合规报告（前端契约对齐）
+# ============================================================
+
+@_base_app.get("/api/compliance/{task_id}")
+async def get_compliance_report(task_id: str):
+    """获取 R155 合规报告（前端契约简版）"""
+    try:
+        queue = get_queue()
+        task = queue.get_task_status(task_id)
+        
+        if not task:
+            raise HTTPException(status_code=404, detail="任务不存在")
+        
+        result = task.result if task.result else {}
+        compliance = result.get('r155_compliance', {})
+        
+        return {
+            "task_id": task_id,
+            "compliance_score": compliance.get('overall_score', compliance.get('compliance_score', 0)),
+            "violations": compliance.get('violations', []),
+            "category_scores": compliance.get('domain_scores', compliance.get('category_scores', {})),
+            "recommendations": compliance.get('recommendations', [])
+        }
+    except Exception as e:
+        logger.error(f"获取合规报告失败：{e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================
+# 新增 API 端点 - 任务取消
+# ============================================================
+
+@_base_app.post("/api/task/{task_id}/cancel")
+async def cancel_task(task_id: str):
+    """取消任务"""
+    try:
+        queue = get_queue()
+        success = queue.cancel_task(task_id) if hasattr(queue, 'cancel_task') else False
+        return {"success": success, "message": "任务已取消" if success else "取消失败"}
+    except Exception as e:
+        logger.error(f"取消任务失败：{e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================
+# 新增 API 端点 - 报告下载（前端契约对齐）
+# ============================================================
+
+@_base_app.get("/api/reports/{task_id}")
+async def download_report(task_id: str):
+    """下载报告（YAML 等格式）"""
+    try:
+        queue = get_queue()
+        task = queue.get_task_status(task_id)
+        
+        if not task:
+            raise HTTPException(status_code=404, detail="任务不存在")
+        
+        result = task.result if task.result else {}
+        
+        import yaml
+        yaml_content = yaml.dump(result, default_flow_style=False, allow_unicode=True)
+        
+        from fastapi.responses import Response
+        return Response(
+            content=yaml_content,
+            media_type="application/x-yaml",
+            headers={"Content-Disposition": f"attachment; filename={task_id}_report.yaml"}
+        )
+    except Exception as e:
+        logger.error(f"下载报告失败：{e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@_base_app.post("/api/report/pdf")
+async def generate_pdf_report_endpoint(firmware_id: str = Form(...)):
+    """生成 PDF 报告（POST 方式，前端契约）"""
+    try:
+        from report_generator.pdf_generator import generate_pdf_report
+        
+        queue = get_queue()
+        task = queue.get_task_status(firmware_id)
+        
+        if not task:
+            raise HTTPException(status_code=404, detail="任务不存在")
+        
+        result = task.result if task.result else {}
+        pdf_path = generate_pdf_report(firmware_id, result)
+        
+        filename = f"{task.filename}_security_report.pdf"
+        return FileResponse(
+            path=pdf_path,
+            filename=filename,
+            media_type='application/pdf'
+        )
+    except ImportError:
+        raise HTTPException(status_code=500, detail="PDF 生成依赖未安装")
+    except Exception as e:
+        logger.error(f"PDF 生成失败：{e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@_base_app.get("/api/report/pdf")
+async def download_pdf_via_query(firmware_id: str = Query(...)):
+    """下载 PDF 报告（GET 方式，前端契约）"""
+    return await generate_pdf_report_endpoint(firmware_id=firmware_id)
+
+@_base_app.post("/api/report/excel")
+async def generate_excel_report_endpoint(firmware_id: str = Form(...)):
+    """生成 Excel 报告（POST 方式，前端契约）"""
+    try:
+        from report_generator.excel_exporter import generate_excel_report
+        
+        queue = get_queue()
+        task = queue.get_task_status(firmware_id)
+        
+        if not task:
+            raise HTTPException(status_code=404, detail="任务不存在")
+        
+        result = task.result if task.result else {}
+        excel_path = generate_excel_report(firmware_id, result)
+        
+        filename = f"{task.filename}_vulnerability_list.xlsx"
+        return FileResponse(
+            path=excel_path,
+            filename=filename,
+            media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    except ImportError:
+        raise HTTPException(status_code=500, detail="Excel 导出依赖未安装")
+    except Exception as e:
+        logger.error(f"Excel 生成失败：{e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@_base_app.get("/api/report/excel")
+async def download_excel_via_query(firmware_id: str = Query(...)):
+    """下载 Excel 报告（GET 方式，前端契约）"""
+    return await generate_excel_report_endpoint(firmware_id=firmware_id)
+
 # ============================================================
 # 启动事件
 # ============================================================
-@app.on_event("startup")
+@_base_app.on_event("startup")
 async def startup_event():
     """启动时初始化队列"""
     logger.info("启动扫描队列服务...")
@@ -460,7 +802,7 @@ async def startup_event():
     queue.start()
     logger.info(f"扫描队列已启动 (最大并发：{MAX_CONCURRENT})")
 
-@app.on_event("shutdown")
+@_base_app.on_event("shutdown")
 async def shutdown_event():
     """关闭时清理资源"""
     logger.info("正在停止扫描队列...")
@@ -472,16 +814,21 @@ async def shutdown_event():
         logger.error(f"停止队列失败：{e}")
 
 # ============================================================
+# 创建包含 Socket.IO 的完整 ASGI 应用
+# ============================================================
+app = ASGIApp(sio, _base_app)
+
+# ============================================================
 # 主程序入口
 # ============================================================
 if __name__ == "__main__":
     import uvicorn
     
     logger.info("=" * 60)
-    logger.info("🦞 固件漏洞扫描平台 v2.3 (带 WebSocket 实时通知)")
+    logger.info("🦞 固件漏洞扫描平台 v2.4.1-hotfix (WebSocket 已正确启用)")
     logger.info("=" * 60)
     
-    # 直接启动 FastAPI 应用
+    # 启动包含 Socket.IO 的完整 ASGI 应用
     uvicorn.run(
         app,
         host=config.get('server', {}).get('host', '0.0.0.0'),

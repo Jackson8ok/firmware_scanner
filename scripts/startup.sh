@@ -106,31 +106,6 @@ else:
         print('   python -m scanner.epss_cache')
 "
 
-# 6. 检查 Node.js 服务（如果可用）
-echo ""
-echo "[6/7] 检查 Node.js 报告服务..."
-if command -v node &> /dev/null && command -v npm &> /dev/null; then
-    echo "检测到 Node.js，准备启动报告生成服务..."
-    
-    cd "$PROJECT_ROOT/services/node-report"
-    if [ -d ".git" ] || [ -f "package.json" ]; then
-        npm install --silent 2>/dev/null || true
-        node report-service.js > ../../logs/node-report.log 2>&1 &
-        NODE_SERVICE_PID=$!
-        echo "Node.js 报告服务 PID: $NODE_SERVICE_PID"
-        
-        # 等待服务启动
-        sleep 2
-        
-        cd "$PROJECT_ROOT"
-    fi
-fi
-
-# 7. 最终检查并启动 FastAPI
-echo ""
-echo "[7/7] 启动 FastAPI 服务器..."
-echo "========================================="
-
 # 启动 Node.js 报告服务（如果可用）
 NODE_SERVICE_PID=""
 if command -v node &> /dev/null && command -v npm &> /dev/null; then

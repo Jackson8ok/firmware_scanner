@@ -381,7 +381,7 @@ class R155ComplianceChecker:
         
         # ========== 步骤 3: 按领域聚合得分 ==========
         for category, clauses in self.kb.category_map.items():
-            domain_evidence = [e for e in evidence_list if any(e['clause_id'] == c.clause_id for c in clauses)]
+            domain_evidence = [e for e in evidence_list if any(e.clause_id == c.clause_id for c in clauses)]
             
             if domain_evidence:
                 score = self._calculate_domain_score(domain_evidence, clauses)
@@ -479,7 +479,11 @@ class R155ComplianceChecker:
         unsafe_patterns = {'telnet', 'ftpd', 'httpd', 'busybox'}
         
         for comp in components:
-            name = comp.get('name', '').lower()
+            # 兼容 dict 和 Component dataclass
+            if isinstance(comp, dict):
+                name = comp.get('name', '').lower()
+            else:
+                name = getattr(comp, 'name', '').lower()
             
             # 加密组件正面证据
             if any(safe in name for safe in ['openssl', 'wolfssl', 'mbedtls', 'crypto']):
@@ -488,11 +492,12 @@ class R155ComplianceChecker:
             # 不安全模式负面证据
             for pattern in unsafe_patterns:
                 if pattern in name:
+                    comp_name = comp.get('name', '') if isinstance(comp, dict) else getattr(comp, 'name', '')
                     evidence.append(ComplianceEvidence(
                         evidence_id=f"EVID-{pattern}-COMPONENT",
                         clause_id="R155-B.2",  # 加密机制
                         status="Partial",
-                        description=f"发现潜在不安全组件：{comp.get('name', '')}",
+                        description=f"发现潜在不安全组件：{comp_name}",
                         severity="Medium",
                         risk_score=0.5
                     ))
