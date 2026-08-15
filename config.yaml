@@ -24,7 +24,7 @@ paths:
   # Grype 二进制路径
   grype_bin: "${GRYPE_BIN:-./tools/grype/grype}"
   # Grype SQLite 数据库路径 (~2GB) - 可通过环境变量 GRYPE_DB_PATH 覆盖
-  grype_db: "${GRYPE_DB_PATH:-./db/grype/6/vulnerability.db}"
+  grype_db: "${GRYPE_DB_PATH:-/mnt/workspace/firmware_scanner/db/grype/6/vulnerability.db}"
   # 固件上传目录
   uploads: "./uploads"
   # 解包工作目录（Binwalk + 备用方案）
