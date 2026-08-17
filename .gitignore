@@ -115,3 +115,8 @@ __pycache__/
 *.pyc
 logs/
 *.db
+
+# Large files (GitHub size limits)
+DVRF.zip
+DVRF/Source Code/*.tar.*
+tools/grype/grype
