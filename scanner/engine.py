@@ -26,6 +26,7 @@ from .epss_cache import EPSSCacheManager
 
 # 全局 EPSS 管理器（单例模式）
 _epss_manager: Optional[EPSSCacheManager] = None
+_epss_download_failed: bool = False  # 防止重复下载
 
 def get_epss_manager(cache_dir: str = "./cache/epss") -> EPSSCacheManager:
     """获取 EPSS 管理器实例（懒加载）"""
@@ -303,7 +304,7 @@ class FirmwareExtractor:
                 capture_output=True, text=True
             )
             
-            if 'SquashFS' not in detect_result.stdout:
+            if 'squashfs' not in detect_result.stdout.lower():
                 logger.info("非 SquashFS 格式，跳过 unsquashfs")
                 return Path("")
             
@@ -449,9 +450,15 @@ class SBOMGenerator:
                 try:
                     return self.generate_syft_sbom(firmware_path)
                 except Exception as e:
-                    logger.warning(f"Syft 失败，降级到字符串提取：{e}")
+                    logger.warning(f"Syft 失败，降级：{e}")
+            
+            # Syft 不可用时，尝试 squashfs 包管理器提取
+            try:
+                return self.extract_squashfs_components(firmware_path)
+            except Exception as e:
+                logger.warning(f"SquashFS 组件提取失败：{e}")
         
-        # MCU 固件或 Syft 不可用时使用字符串提取
+        # MCU 固件或所有方法失败时使用字符串提取
         return self.extract_mcu_components(firmware_path)
     
     def _detect_firmware_type(self, firmware_path: str) -> str:
@@ -614,6 +621,118 @@ class SBOMGenerator:
                 return match.group(1)
         
         return None
+    
+    def extract_squashfs_components(self, firmware_path: str) -> List[Component]:
+        """从 squashfs 固件提取组件（基于包管理器数据库）"""
+        import tempfile
+        import shutil
+        
+        components = []
+        extract_dir = None
+        
+        try:
+            # 检查是否是 squashfs
+            result = subprocess.run(
+                ['file', '-b', firmware_path],
+                capture_output=True, text=True
+            )
+            if 'squashfs' not in result.stdout.lower():
+                logger.debug(f"非 squashfs 文件，跳过：{result.stdout[:50]}")
+                return []
+            
+            # 提取到临时目录
+            extract_dir = tempfile.mkdtemp(prefix='squashfs_')
+            subprocess.run(
+                ['unsquashfs', '-f', '-d', extract_dir, firmware_path],
+                capture_output=True, check=True, timeout=60
+            )
+            
+            logger.info(f"SquashFS 提取到：{extract_dir}")
+            
+            # 查找 opkg 包数据库
+            opkg_info = os.path.join(extract_dir, 'usr', 'lib', 'opkg', 'info')
+            if os.path.isdir(opkg_info):
+                for fname in os.listdir(opkg_info):
+                    if fname.endswith('.control'):
+                        pkg_name = fname[:-8]  # 去掉 .control
+                        version = 'unknown'
+                        
+                        # 解析 control 文件获取版本
+                        ctrl_path = os.path.join(opkg_info, fname)
+                        try:
+                            with open(ctrl_path, 'r', errors='ignore') as f:
+                                for line in f:
+                                    if line.startswith('Version:'):
+                                        version = line.split(':', 1)[1].strip()
+                                        break
+                        except Exception:
+                            pass
+                        
+                        components.append(Component(
+                            name=pkg_name,
+                            version=version,
+                            type='opkg',
+                            path=ctrl_path
+                        ))
+            
+            # 如果 opkg 没找到，尝试 dpkg
+            dpkg_info = os.path.join(extract_dir, 'usr', 'lib', 'opkg')
+            dpkg_status = os.path.join(extract_dir, 'var', 'lib', 'dpkg', 'status')
+            for dpkg_path in [dpkg_status]:
+                if os.path.isfile(dpkg_path):
+                    with open(dpkg_path, 'r', errors='ignore') as f:
+                        content = f.read()
+                    for pkg_block in content.split('\n\n'):
+                        pkg_name = None
+                        version = 'unknown'
+                        for line in pkg_block.split('\n'):
+                            if line.startswith('Package:'):
+                                pkg_name = line.split(':', 1)[1].strip()
+                            elif line.startswith('Version:'):
+                                version = line.split(':', 1)[1].strip()
+                        if pkg_name:
+                            components.append(Component(
+                                name=pkg_name,
+                                version=version,
+                                type='dpkg',
+                                path=dpkg_path
+                            ))
+            
+            # 如果还是没找到包数据库，尝试从 lib 目录提取 .so 文件
+            if not components:
+                lib_dir = os.path.join(extract_dir, 'usr', 'lib')
+                if os.path.isdir(lib_dir):
+                    for root, dirs, files in os.walk(lib_dir):
+                        for f in files:
+                            if f.endswith('.so') or '.so.' in f:
+                                # 提取库名
+                                name = f.split('.so')[0] if '.so.' in f else f.replace('.so', '')
+                                # 尝试从文件名提取版本
+                                parts = f.replace('.so', '').split('-')
+                                version = 'unknown'
+                                for p in parts:
+                                    if re.match(r'^\d+\.\d+', p):
+                                        version = p
+                                        break
+                                components.append(Component(
+                                    name=name,
+                                    version=version,
+                                    type='library',
+                                    path=os.path.join(root, f)
+                                ))
+            
+            logger.info(f"SquashFS 组件提取：{len(components)} 个包")
+            return components
+            
+        except subprocess.CalledProcessError as e:
+            logger.warning(f"unsquashfs 失败：{e.stderr[:200] if e.stderr else str(e)}")
+            return []
+        except Exception as e:
+            logger.error(f"SquashFS 组件提取异常：{e}")
+            return []
+        finally:
+            if extract_dir and os.path.isdir(extract_dir):
+                shutil.rmtree(extract_dir, ignore_errors=True)
     
     def generate_cyclonedx_sbom(
         self, 
@@ -951,6 +1070,7 @@ class CVEMatcher:
     
     def _get_epss_score_cached(self, cve_id: str) -> Optional[float]:
         """获取 EPSS 分数（使用本地缓存）"""
+        global _epss_download_failed
         try:
             # 获取 EPSS 管理器实例
             epss_mgr = get_epss_manager()
@@ -960,10 +1080,13 @@ class CVEMatcher:
             
             # 检查数据是否过期（如果需要则自动更新）
             if not epss_mgr.is_data_available():
+                if _epss_download_failed:
+                    return None  # 已经尝试过下载并失败，不再重试
                 logger.info("正在下载最新的 EPSS 数据...")
                 success = epss_mgr.download_latest_epss()
-                if not success:
-                    logger.warning("EPSS 数据下载失败，跳过 EPSS 评分")
+                if not success or not epss_mgr.is_data_available():
+                    logger.warning("EPSS 数据下载失败或为空，跳过 EPSS 评分")
+                    _epss_download_failed = True
                     return None
             
             # 从缓存查询

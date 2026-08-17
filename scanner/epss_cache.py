@@ -120,10 +120,10 @@ class EPSSCacheManager:
     
     def download_latest_epss(self, force: bool = False) -> bool:
         """下载最新的 EPSS 数据集"""
-        # FIRST.org EPSS 官方数据源
+        # FIRST.org EPSS 官方数据源（2025 年后 URL 已变更）
         urls = [
-            "https://www.first.org/epss/epss_scores.json.gz",
-            "https://epss.cyentia.com/epss_scores-current.csv.gz"
+            "https://epss.first.org/epss_scores-current.csv.gz",
+            "https://epss.cyentia.com/epss_scores-current.csv.gz",
         ]
         
         # 首选 JSON 格式

@@ -406,10 +406,13 @@ class R155ComplianceChecker:
         recommendations = self._generate_recommendations(vulnerabilities, evidence_list, compliance_level)
         
         # 统计信息
-        compliant_count = sum(1 for e in evidence_list if e['status'] == 'Compliant')
-        non_compliant_count = sum(1 for e in evidence_list if e['status'] == 'Non-Compliant')
-        partial_count = sum(1 for e in evidence_list if e['status'] == 'Partial')
-        critical_count = sum(1 for v in vulnerabilities if v.get('severity', '').lower() == 'critical')
+        def get_status(e):
+            return e['status'] if isinstance(e, dict) else e.status
+        
+        compliant_count = sum(1 for e in evidence_list if get_status(e) == 'Compliant')
+        non_compliant_count = sum(1 for e in evidence_list if get_status(e) == 'Non-Compliant')
+        partial_count = sum(1 for e in evidence_list if get_status(e) == 'Partial')
+        critical_count = sum(1 for v in vulnerabilities if (v.severity.lower() if hasattr(v, 'severity') and v.severity else v.get('severity', '').lower()) == 'critical')
         
         return ComplianceScore(
             firmware_id=firmware_id,
@@ -437,9 +440,15 @@ class R155ComplianceChecker:
         overdue_vulns = []
         
         for vuln in vulnerabilities:
-            cve_id = vuln.get('cve_id', '')
-            severity = vuln.get('severity', '').upper()
-            r155_non_compliant = vuln.get('r155_non_compliant', False)
+            # 兼容对象和字典两种格式
+            if hasattr(vuln, 'cve_id'):
+                cve_id = vuln.cve_id
+                severity = vuln.severity.upper() if vuln.severity else ''
+                r155_non_compliant = vuln.is_r155_non_compliant() if hasattr(vuln, 'is_r155_non_compliant') else False
+            else:
+                cve_id = vuln.get('cve_id', '')
+                severity = vuln.get('severity', '').upper()
+                r155_non_compliant = vuln.get('r155_non_compliant', False)
             
             # 严重漏洞证据
             if severity in ['CRITICAL', 'HIGH']:
@@ -552,7 +561,11 @@ class R155ComplianceChecker:
         penalty = 0
         
         for vuln in vulnerabilities:
-            severity = vuln.get('severity', '').upper()
+            # 兼容对象和字典两种格式
+            if hasattr(vuln, 'severity'):
+                severity = vuln.severity.upper() if vuln.severity else ''
+            else:
+                severity = vuln.get('severity', '').upper()
             penalty += self.WEIGHTS['vulnerability_penalty'].get(severity, 2)
         
         return penalty
@@ -576,12 +589,22 @@ class R155ComplianceChecker:
         
         # 添加高危 CVE
         for vuln in vulnerabilities:
-            if vuln.get('severity', '').upper() in ['CRITICAL', 'HIGH']:
+            # 兼容对象和字典两种格式
+            if hasattr(vuln, 'severity'):
+                severity = vuln.severity.upper() if vuln.severity else ''
+                cve_id = vuln.cve_id
+                desc = getattr(vuln, 'description', '')[:200]
+            else:
+                severity = vuln.get('severity', '').upper()
+                cve_id = vuln.get('cve_id')
+                desc = vuln.get('description', '')[:200]
+            
+            if severity in ['CRITICAL', 'HIGH']:
                 high_risk.append({
                     'type': 'CVE',
-                    'id': vuln.get('cve_id'),
-                    'severity': vuln.get('severity'),
-                    'description': vuln.get('description', '')[:200]
+                    'id': cve_id,
+                    'severity': severity,
+                    'description': desc
                 })
         
         # 添加不合规证据
@@ -602,11 +625,14 @@ class R155ComplianceChecker:
         recommendations = []
         
         # 基于漏洞的建议
-        critical_vulns = [v for v in vulnerabilities if v.get('severity', '').upper() == 'CRITICAL']
+        def get_severity(v):
+            return v.severity.upper() if hasattr(v, 'severity') and v.severity else v.get('severity', '').upper()
+        
+        critical_vulns = [v for v in vulnerabilities if get_severity(v) == 'CRITICAL']
         if critical_vulns:
             recommendations.append(f"🔴 立即修复 {len(critical_vulns)} 个严重 CVE（优先级：P0）")
         
-        high_vulns = [v for v in vulnerabilities if v.get('severity', '').upper() == 'HIGH']
+        high_vulns = [v for v in vulnerabilities if get_severity(v) == 'HIGH']
         if high_vulns:
             recommendations.append(f"🟠 在 30 天内修复 {len(high_vulns)} 个高危 CVE（优先级：P1）")
         

@@ -142,8 +142,12 @@ class ToolDetector:
     def check_unsquashfs(self) -> dict:
         """检查 unsquashfs 是否可用"""
         try:
-            result = self._run_command(['unsquashfs', '-version'])
-            if result:
+            # unsquashfs -version 返回 exit code 1，但输出正常
+            result = subprocess.run(
+                ['unsquashfs', '-version'],
+                capture_output=True, text=True, timeout=10
+            )
+            if result.stdout and 'version' in result.stdout.lower():
                 path = self._find_executable('unsquashfs')
                 version = 'squashfs-tools'
                 return {'available': True, 'path': path, 'version': version}
