@@ -188,9 +188,9 @@ POST /api/task/{task_id}/regenerate-report       # 重新生成
 
 ## 👥 贡献者
 
-- **超梦虾 (Mewtwo Master)** - 架构设计和核心开发
-- **伊布虾 (Eevee)** - 前端集成和 API 设计
-- **皮卡虾 (Pika)** - 测试和质量保证
+- **攻城狮阿信** - 架构设计和核心开发
+- **攻城狮阿信 ** - 前端集成和 API 设计
+- **攻城狮阿信 ** - 测试和质量保证
 
 ---
 
@@ -220,7 +220,7 @@ POST /api/task/{task_id}/regenerate-report       # 重新生成
 
 **最后更新**: 2026-08-10  
 **版本**: v2.3  
-**作者**: 超梦虾 (Mewtwo Master) & 伊布虾 (Eevee)
+**作者**: 攻城狮阿信 & 攻城狮阿信 
 
 ---
 

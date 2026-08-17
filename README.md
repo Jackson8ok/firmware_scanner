@@ -523,7 +523,7 @@ git push origin feature/amazing-feature
 ### 个人支持者
 - [你的名字] - 核心开发者
 
-❤️ 想成为下一个支持者吗？通过 [GitHub Sponsors](https://github.com/sponsors/pokeclaw) 或 [Open Collective](https://opencollective.com/pokeclaw) 支持我们！
+❤️ 想成为下一个支持者吗？通过 [GitHub Sponsors](https://github.com/sponsors/玄武) 或 [Open Collective](https://opencollective.com/玄武) 支持我们！
 
 ---
 
@@ -556,6 +556,6 @@ git push origin feature/amazing-feature
 
 ---
 
-**Made with ❤️ by the 玄武 Team**
+**Made with ❤️ by the 玄武团队**
 
 [![Star History Chart](https://api.star-history.com/svg?repos=Jackson8ok/firmware_scanner&type=Date)](https://star-history.com/#Jackson8ok/firmware_scanner&Date)

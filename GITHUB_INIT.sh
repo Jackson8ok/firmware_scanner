@@ -1,5 +1,5 @@
 #!/bin/bash
-# PokeClaw 开源准备 - GitHub 初始化脚本
+# 玄武 开源准备 - GitHub 初始化脚本
 # 
 # 使用方法:
 #   ./GITHUB_INIT.sh
@@ -11,7 +11,7 @@
 
 set -e
 
-echo "🦞 PokeClaw 开源准备 - GitHub 初始化"
+echo "🐢 玄武 开源准备 - GitHub 初始化"
 echo "======================================"
 echo ""
 
@@ -31,7 +31,7 @@ fi
 
 # 检查当前目录
 if [ ! -f "LICENSE" ] || [ ! -f "README.md" ]; then
-    echo -e "${RED}❌ 错误：这不是 PokeClaw 项目根目录${NC}"
+    echo -e "${RED}❌ 错误：这不是 玄武 项目根目录${NC}"
     echo "请在包含 LICENSE 和 README.md 的目录下运行此脚本"
     exit 1
 fi
@@ -139,18 +139,18 @@ echo "  ${remote_url}/releases/new"
 echo ""
 echo "填写:"
 echo "  Tag version: v1.0.0-alpha"
-echo "  Title: Alpha Release 🦞"
+echo "  Title: Alpha Release 🐢"
 echo "  Description: 复制 OPEN_SOURCE_PREPARATION_REPORT.md 中的内容"
 
 echo ""
 echo "=========================================="
-echo -e "${GREEN}🎉 恭喜！PokeClaw 已成功开源！${NC}"
+echo -e "${GREEN}🎉 恭喜！玄武 已成功开源！${NC}"
 echo "=========================================="
 echo ""
 echo "下一步行动:"
 echo ""
 echo "1. 📢 分享到社交媒体"
-echo "   - Twitter/X: @PokeClawIO"
+echo "   - Twitter/X: @玄武IO"
 echo "   - LinkedIn"
 echo "   - Reddit (r/netsec, r/opensource)"
 echo "   - Hacker News"
@@ -175,7 +175,7 @@ echo "   - 保持文档同步"
 echo "   - 响应社区反馈"
 echo ""
 echo -e "${BLUE}ℹ️  需要帮助？${NC}"
-echo "  Email: contact@pokeclaw.io"
+echo "  Email: contact@玄武.io"
 echo "  Discord: [待配置]"
 echo ""
 echo -e "${YELLOW}⭐ 祝你好运！记住，开源不仅是代码，更是社区！${NC}"

@@ -60,7 +60,7 @@
 
 ### 功能建议
 
-如果你有新功能想法，请先在 [Discussions](https://github.com/pokeclaw/scanner/discussions) 中讨论，确认有价值后再创建 Feature Request。
+如果你有新功能想法，请先在 [Discussions](https://github.com/玄武/scanner/discussions) 中讨论，确认有价值后再创建 Feature Request。
 
 ---
 
@@ -77,14 +77,14 @@ git clone https://github.com/YOUR_USERNAME/scanner.git
 cd scanner
 
 # 3. 添加上游仓库（方便同步更新）
-git remote add upstream https://github.com/pokeclaw/scanner.git
+git remote add upstream https://github.com/玄武/scanner.git
 
 # 4. 验证远程仓库
 git remote -v
 # origin    https://github.com/YOUR_USERNAME/scanner.git (fetch)
 # origin    https://github.com/YOUR_USERNAME/scanner.git (push)
-# upstream  https://github.com/pokeclaw/scanner.git (fetch)
-# upstream  https://github.com/pokeclaw/scanner.git (push)
+# upstream  https://github.com/玄武/scanner.git (fetch)
+# upstream  https://github.com/玄武/scanner.git (push)
 ```
 
 ### 分支管理
@@ -432,7 +432,7 @@ A: 不建议。请将不同的功能拆分成多个独立的 PR，这样更容�
 
 ### Q5: 我是新手，有什么适合入门的任务吗？
 
-A: 查看标记为 [`good first issue`](https://github.com/pokeclaw/scanner/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) 或 [`help wanted`](https://github.com/pokeclaw/scanner/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) 的 Issue。
+A: 查看标记为 [`good first issue`](https://github.com/玄武/scanner/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) 或 [`help wanted`](https://github.com/玄武/scanner/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) 的 Issue。
 
 ---
 
@@ -457,15 +457,15 @@ A: 查看标记为 [`good first issue`](https://github.com/pokeclaw/scanner/issu
 
 ## 💬 需要帮助？
 
-- 💡 [Discussions](https://github.com/pokeclaw/scanner/discussions) - 提问交流
-- 🐛 [Issues](https://github.com/pokeclaw/scanner/issues) - 报告问题
+- 💡 [Discussions](https://github.com/玄武/scanner/discussions) - 提问交流
+- 🐛 [Issues](https://github.com/玄武/scanner/issues) - 报告问题
 - ✉️ Email: zhu80k@163.com
 
 ---
 
 **感谢所有为 玄武 做出贡献的人！** ❤️
 
-<a href="https://github.com/pokeclaw/scanner/graphs/contributors">
+<a href="https://github.com/玄武/scanner/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=Jackson8ok/firmware_scanner" />
 </a>
 
