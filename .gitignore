@@ -120,3 +120,11 @@ logs/
 DVRF.zip
 DVRF/Source Code/*.tar.*
 tools/grype/grype
+
+# Grype 数据库（太大，不应入库）
+db/grype/6/vulnerability.db
+
+# DVRF 临时文件和压缩包
+DVRF.zip
+DVRF/Source Code/*.tar.*
+DVRF_temp/
