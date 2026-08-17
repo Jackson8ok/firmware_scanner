@@ -128,3 +128,8 @@ db/grype/6/vulnerability.db
 DVRF.zip
 DVRF/Source Code/*.tar.*
 DVRF_temp/
+
+# DVRF 测试固件（不含已知第三方组件，不适合做 CVE 扫描验证）
+DVRF.zip
+DVRF/
+uploads/DVRF_v03.bin
