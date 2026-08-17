@@ -103,10 +103,10 @@ except: pass
     
     # 导出报告测试
     REPORT_RESPONSE=$(curl -s -X POST http://localhost:8765/api/report/excel \
-      -F "firmware_id=$FIRMWARE_ID" -o "/tmp/test_report.xlsx" 2>/dev/null)
+      -F "firmware_id=$FIRMWARE_ID" -o "$PROJECT_ROOT/logs/test_report.xlsx" 2>/dev/null)
     
-    if [ -f "/tmp/test_report.xlsx" ] && [ -s "/tmp/test_report.xlsx" ]; then
-        echo "   ✅ Excel 报告导出成功 (/tmp/test_report.xlsx)"
+    if [ -f "$PROJECT_ROOT/logs/test_report.xlsx" ] && [ -s "$PROJECT_ROOT/logs/test_report.xlsx" ]; then
+        echo "   ✅ Excel 报告导出成功 ($PROJECT_ROOT/logs/test_report.xlsx)"
     fi
     
 else

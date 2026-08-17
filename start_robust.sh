@@ -14,8 +14,12 @@ echo ""
 
 WORK_DIR="/mnt/workspace/firmware_scanner"
 API_DIR="$WORK_DIR/api"
-LOG_FILE="/tmp/fs_service_$$.log"
-PID_FILE="/tmp/fs_service.pid"
+LOG_DIR="$WORK_DIR/logs"
+LOG_FILE="$LOG_DIR/fs_service_$$.log"
+PID_FILE="$LOG_DIR/fs_service.pid"
+
+# 确保日志目录存在
+mkdir -p "$LOG_DIR"
 
 # ============================================================
 # 步骤 1: 清理旧进程
@@ -62,14 +66,14 @@ echo ""
 echo "🔍 步骤 3/6: 快速导入测试..."
 cd "$API_DIR"
 
-if timeout 15 python -c "from main import app" > /tmp/import_test.log 2>&1; then
+if timeout 15 python -c "from main import app" > "$LOG_DIR/import_test.log" 2>&1; then
     echo "   ✅ 模块导入成功，无语法/依赖错误"
 else
     echo "   ❌ 导入失败！查看详细错误:"
-    tail -20 /tmp/import_test.log
+    tail -20 "$LOG_DIR/import_test.log"
     echo ""
     echo "💡 建议修复:"
-    echo "   1. 查看完整日志：cat /tmp/import_test.log"
+    echo "   1. 查看完整日志：cat $LOG_DIR/import_test.log"
     echo "   2. 常见错误:"
     echo "      - ModuleNotFoundError → pip install xxx"
     echo "      - SyntaxError → 检查代码语法"
