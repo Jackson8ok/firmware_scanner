@@ -109,3 +109,9 @@ site/
 # Backup Files
 *.backup
 *.old
+.cache/
+cache/
+__pycache__/
+*.pyc
+logs/
+*.db
