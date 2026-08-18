@@ -293,30 +293,65 @@ class FirmwareExtractor:
             return output_dir
     
     def extract_squashfs_mount(self, firmware_path: str) -> Path:
-        """使用 unsquashfs 直接解压（针对纯 SquashFS 镜像）"""
+        """使用 unsquashfs 直接解压（针对纯 SquashFS 镜像或复合固件）"""
         output_dir = self.work_dir / "squashfs_root"
         output_dir.mkdir(exist_ok=True)
         
         try:
             # 检测是否为 SquashFS
             detect_result = subprocess.run(
-                ['file', firmware_path],
+                ['file', '-b', firmware_path],
                 capture_output=True, text=True
             )
             
-            if 'squashfs' not in detect_result.stdout.lower():
-                logger.info("非 SquashFS 格式，跳过 unsquashfs")
-                return Path("")
+            firmware_type = detect_result.stdout.lower()
             
-            logger.info("检测到 SquashFS，使用 unsquashfs 提取...")
-            result = subprocess.run(
-                ['unsquashfs', '-f', '-d', str(output_dir), firmware_path],
-                capture_output=True, text=True, check=True,
-                timeout=300
-            )
+            # 如果是纯 SquashFS，直接解压
+            if 'squashfs' in firmware_type:
+                logger.info("检测到纯 SquashFS，使用 unsquashfs 提取...")
+                result = subprocess.run(
+                    ['unsquashfs', '-f', '-d', str(output_dir), firmware_path],
+                    capture_output=True, text=True, check=True,
+                    timeout=300
+                )
+                logger.info(f"✅ Unsquashfs 提取成功：{output_dir}")
+                return output_dir
             
-            logger.info(f"✅ Unsquashfs 提取成功：{output_dir}")
-            return output_dir
+            # 如果是复合固件（包含 SquashFS），尝试提取
+            if 'firmware' in firmware_type or 'openwrt' in firmware_type:
+                logger.info("检测到复合固件，搜索内部 SquashFS...")
+                squashfs_offset = self.find_squashfs_offset(firmware_path)
+                if squashfs_offset:
+                    logger.info(f"在偏移 {hex(squashfs_offset)} 发现 SquashFS，提取...")
+                    # 使用 dd 提取 SquashFS 部分
+                    import tempfile
+                    temp_squashfs = tempfile.NamedTemporaryFile(delete=False, suffix='.squashfs')
+                    temp_squashfs.close()
+                    
+                    dd_result = subprocess.run(
+                        ['dd', f'if={firmware_path}', f'of={temp_squashfs.name}', 'bs=1', f'skip={squashfs_offset}'],
+                        capture_output=True, text=True
+                    )
+                    
+                    if dd_result.returncode == 0:
+                        logger.info(f"✅ SquashFS 提取到临时文件：{temp_squashfs.name}")
+                        # 解压提取的 SquashFS
+                        result = subprocess.run(
+                            ['unsquashfs', '-f', '-d', str(output_dir), temp_squashfs.name],
+                            capture_output=True, text=True, check=True,
+                            timeout=300
+                        )
+                        logger.info(f"✅ Unsquashfs 提取成功：{output_dir}")
+                        os.unlink(temp_squashfs.name)
+                        return output_dir
+                    else:
+                        logger.error(f"dd 提取失败：{dd_result.stderr}")
+                        os.unlink(temp_squashfs.name)
+                else:
+                    logger.warning("未找到内部 SquashFS")
+            
+            logger.info("非 SquashFS 格式，跳过 unsquashfs")
+            return Path("")
             
         except subprocess.CalledProcessError as e:
             logger.error(f"Unsquashfs 失败：{e}")
@@ -324,6 +359,25 @@ class FirmwareExtractor:
         except Exception as e:
             logger.error(f"Unsquashfs 异常：{e}")
             return Path("")
+    
+    def find_squashfs_offset(self, firmware_path: str) -> int:
+        """查找固件中 SquashFS 魔数的偏移量"""
+        squashfs_magic = [b'hsqs', b'sqsh', b'shsq']
+        
+        try:
+            with open(firmware_path, 'rb') as f:
+                data = f.read(2 * 1024 * 1024)  # 读取前 2MB
+            
+            for magic in squashfs_magic:
+                pos = data.find(magic)
+                if pos != -1:
+                    logger.debug(f"发现 SquashFS 魔数 '{magic.decode()}' 在偏移 {hex(pos)}")
+                    return pos
+            
+            return 0
+        except Exception as e:
+            logger.error(f"查找 SquashFS 偏移失败：{e}")
+            return 0
     
     def extract_with_7zip(self, firmware_path: str) -> Path:
         """使用 7-Zip 解包（降级方案）"""
@@ -438,7 +492,13 @@ class SBOMGenerator:
     
     def generate_sbom(self, firmware_path: str, firmware_type: str = 'auto') -> List[Component]:
         """统一 SBOM 生成入口"""
+        import os
         logger.info(f"生成 SBOM: {firmware_path} (类型：{firmware_type})")
+        
+        # 如果传入的是目录（已解压），直接从目录提取组件
+        if os.path.isdir(firmware_path):
+            logger.info(f"检测到目录输入，直接从目录提取组件")
+            return self.extract_squashfs_components_from_dir(firmware_path)
         
         # 自动检测类型
         if firmware_type == 'auto':
@@ -462,8 +522,9 @@ class SBOMGenerator:
         return self.extract_mcu_components(firmware_path)
     
     def _detect_firmware_type(self, firmware_path: str) -> str:
-        """使用 file 命令检测固件类型"""
+        """使用 file 命令检测固件类型，支持 OpenWrt 等嵌套 SquashFS 固件"""
         try:
+            # 优先使用 file 命令
             result = subprocess.run(
                 ['file', '-b', firmware_path],
                 capture_output=True, text=True
@@ -478,7 +539,27 @@ class SBOMGenerator:
                 return 'hex'
             elif 'motorola s-record' in output:
                 return 'srec'
-            elif 'data' in output or 'binary' in output:
+            
+            # 对于 OpenWrt 等固件，file 可能只显示 "firmware" 或 "data"
+            # 尝试扫描固件内容查找 SquashFS 魔数
+            squashfs_magic = [
+                b'hsqs',  # SquashFS 3.0
+                b'sqsh',  # SquashFS 4.0
+                b'shsq',  # SquashFS 2.0
+            ]
+            
+            try:
+                with open(firmware_path, 'rb') as f:
+                    # 读取前 1MB 查找 SquashFS 魔数
+                    data = f.read(1024 * 1024)
+                    for magic in squashfs_magic:
+                        if magic in data:
+                            logger.info(f"在固件中检测到 SquashFS 魔数: {magic}")
+                            return 'squashfs'
+            except Exception as e:
+                logger.debug(f"固件内容扫描失败: {e}")
+            
+            if 'data' in output or 'binary' in output:
                 return 'bin'
             else:
                 return 'unknown'
@@ -733,6 +814,71 @@ class SBOMGenerator:
         finally:
             if extract_dir and os.path.isdir(extract_dir):
                 shutil.rmtree(extract_dir, ignore_errors=True)
+    
+    def extract_squashfs_components_from_dir(self, extract_dir: str) -> List[Component]:
+        """从已解压的 squashfs 目录提取组件（基于包管理器数据库）"""
+        import os
+        import re
+        
+        components = []
+        logger.info(f"从目录提取组件：{extract_dir}")
+        
+        try:
+            # 查找 opkg 包数据库
+            opkg_info = os.path.join(extract_dir, 'usr', 'lib', 'opkg', 'info')
+            if os.path.isdir(opkg_info):
+                for fname in os.listdir(opkg_info):
+                    if fname.endswith('.control'):
+                        pkg_name = fname[:-8]  # 去掉 .control
+                        version = 'unknown'
+                        
+                        # 解析 control 文件获取版本
+                        ctrl_path = os.path.join(opkg_info, fname)
+                        try:
+                            with open(ctrl_path, 'r', errors='ignore') as f:
+                                for line in f:
+                                    if line.startswith('Version:'):
+                                        version = line.split(':', 1)[1].strip()
+                                        break
+                        except Exception:
+                            pass
+                        
+                        components.append(Component(
+                            name=pkg_name,
+                            version=version,
+                            type='opkg',
+                            path=ctrl_path
+                        ))
+                
+                logger.info(f"从 opkg 提取 {len(components)} 个包")
+            
+            # 如果 opkg 没找到，尝试从 lib 目录提取 .so 文件
+            if not components:
+                lib_dir = os.path.join(extract_dir, 'usr', 'lib')
+                if os.path.isdir(lib_dir):
+                    for root, dirs, files in os.walk(lib_dir):
+                        for f in files:
+                            if f.endswith('.so') or '.so.' in f:
+                                name = f.split('.so')[0] if '.so.' in f else f.replace('.so', '')
+                                parts = f.replace('.so', '').split('-')
+                                version = 'unknown'
+                                for p in parts:
+                                    if re.match(r'^\d+\.\d+', p):
+                                        version = p
+                                        break
+                                components.append(Component(
+                                    name=name,
+                                    version=version,
+                                    type='library',
+                                    path=os.path.join(root, f)
+                                ))
+                    logger.info(f"从 .so 文件提取 {len(components)} 个库")
+            
+            return components
+            
+        except Exception as e:
+            logger.error(f"目录组件提取异常：{e}")
+            return []
     
     def generate_cyclonedx_sbom(
         self, 
