@@ -181,6 +181,25 @@ for dir_path in [config['paths']['uploads'],
 MAX_CONCURRENT = config.get('queue', {}).get('max_concurrent', 3)
 scan_queue_instance: Optional[ScanQueue] = None
 
+# P1-1 修复：为线程池中的 WebSocket 通知创建专用事件循环
+_ws_event_loop: Optional[asyncio.AbstractEventLoop] = None
+
+def _ensure_ws_event_loop() -> asyncio.AbstractEventLoop:
+    """确保 WebSocket 通知有可用的事件循环（后台线程）"""
+    global _ws_event_loop
+    if _ws_event_loop is None or not _ws_event_loop.is_running():
+        import threading
+        _ws_event_loop = asyncio.new_event_loop()
+        
+        def run_loop():
+            asyncio.set_event_loop(_ws_event_loop)
+            _ws_event_loop.run_forever()
+        
+        t = threading.Thread(target=run_loop, daemon=True)
+        t.start()
+        logger.info("✅ WebSocket 后台事件循环已启动")
+    return _ws_event_loop
+
 def get_queue() -> ScanQueue:
     """获取扫描队列实例（单例）"""
     global scan_queue_instance
@@ -190,14 +209,11 @@ def get_queue() -> ScanQueue:
         
         # 注册 WebSocket 通知发送器
         def send_ws_notification(event_type: str, data: dict):
-            """发送 WebSocket 通知"""
-            import asyncio
+            """发送 WebSocket 通知（线程安全）"""
             try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    asyncio.create_task(sio.emit(event_type, data))
-                else:
-                    loop.run_until_complete(sio.emit(event_type, data))
+                loop = _ensure_ws_event_loop()
+                coro = sio.emit(event_type, data)
+                asyncio.run_coroutine_threadsafe(coro, loop)
             except Exception as e:
                 logger.error(f"WebSocket 通知发送失败：{e}")
         

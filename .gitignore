@@ -134,3 +134,4 @@ DVRF.zip
 DVRF/
 uploads/DVRF_v03.bin
 .github_token
+api/data/tasks.db
