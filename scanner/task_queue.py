@@ -569,6 +569,9 @@ class ScanQueue:
                     'version': v.component_version,
                     'severity': v.severity,
                     'cvss_score': v.cvss_score,
+                    'published_date': v.published_date.isoformat() if v.published_date else None,
+                    'epss_score': v.epss_score,
+                    'fixed_version': getattr(v, 'fixed_version', None),
                     'priority_score': round(v.priority_score or 0, 3),
                     'description': v.description[:200],
                     'r155_non_compliant': v.cve_id in violating_cves
