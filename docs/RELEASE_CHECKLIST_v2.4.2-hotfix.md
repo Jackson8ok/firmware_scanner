@@ -55,18 +55,13 @@
 
 ## ⏳ 待完成事项
 
-### 1. 创建 GitHub Release（手动）
+### 1. 创建 GitHub Release（手动）✅ 已完成
 
-**步骤**:
-1. 访问：https://github.com/Jackson8ok/firmware_scanner/releases/new
-2. Tag version: `v2.4.2-hotfix`
-3. Target: `main`
-4. Release title: `🐢 玄武 v2.4.2-hotfix - P0/P1 关键 Bug 修复`
-5. 复制 `docs/RELEASE_NOTES_v2.4.2-hotfix.md` 内容到描述
-6. 勾选 "Set as the latest release"
-7. 点击 "Publish release"
+**状态**: 🟢 **已自动创建成功**
 
-**详细指南**: `scripts/MANUAL_RELEASE_GUIDE.md`
+**Release 地址**: https://github.com/Jackson8ok/firmware_scanner/releases/tag/v2.4.2-hotfix
+
+**发布时间**: 2026-08-19T03:26:05Z
 
 ### 2. 用户端到端验证（待执行）
 
@@ -116,7 +111,7 @@
 - [x] 代码推送到 GitHub
 - [x] SSH 持久化配置完成
 - [x] Release Notes 撰写完成
-- [ ] GitHub Release 创建（待手动）
+- [x] GitHub Release 创建（✅ 已自动完成）
 - [ ] 用户端到端验证（待执行）
 - [ ] 用户通知发送（待执行）
 
