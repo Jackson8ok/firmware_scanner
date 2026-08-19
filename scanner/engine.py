@@ -495,7 +495,7 @@ class SBOMGenerator:
             return False
     
     def generate_sbom(self, firmware_path: str, firmware_type: str = 'auto') -> List[Component]:
-        """统一 SBOM 生成入口"""
+        """统一 SBOM 生成入口（v2.5.0: 合并 Syft + 自研提取器）"""
         import os
         logger.info(f"生成 SBOM: {firmware_path} (类型：{firmware_type})")
         
@@ -512,38 +512,89 @@ class SBOMGenerator:
             logger.error("❌ 固件路径为空")
             return []
         
-        # 如果传入的是目录（已解压），优先使用 Syft 扫描
+        # 如果传入的是目录（已解压），合并 Syft + 自研提取器
         if os.path.isdir(firmware_path):
-            logger.info(f"检测到目录输入，优先使用 Syft 扫描")
-            if self.syft_available:
-                try:
-                    return self.generate_syft_sbom(firmware_path)
-                except Exception as e:
-                    logger.warning(f"Syft 目录扫描失败，降级到自研提取器：{e}")
-            # Syft 不可用或失败时，降级到目录组件提取
-            logger.info(f"从目录提取组件（降级方案）")
-            return self.extract_squashfs_components_from_dir(firmware_path)
+            logger.info(f"检测到目录输入，合并 Syft + 自研提取器")
+            return self.generate_sbom_merged(firmware_path, firmware_type)
         
         # 自动检测类型
         if firmware_type == 'auto':
             firmware_type = self._detect_firmware_type(firmware_path)
         
-        # Linux/ELF固件优先用Syft
+        # Linux/ELF固件：合并 Syft + 自研提取器
         if firmware_type in ['elf', 'squashfs', 'linux']:
-            if self.syft_available:
-                try:
-                    return self.generate_syft_sbom(firmware_path)
-                except Exception as e:
-                    logger.warning(f"Syft 失败，降级：{e}")
-            
-            # Syft 不可用时，尝试 squashfs 包管理器提取
-            try:
-                return self.extract_squashfs_components(firmware_path)
-            except Exception as e:
-                logger.warning(f"SquashFS 组件提取失败：{e}")
+            return self.generate_sbom_merged(firmware_path, firmware_type)
         
-        # MCU 固件或所有方法失败时使用字符串提取
+        # MCU 固件使用字符串提取
         return self.extract_mcu_components(firmware_path)
+    
+    def generate_sbom_merged(self, firmware_path: str, firmware_type: str = 'auto') -> List[Component]:
+        """
+        合并 Syft + 自研提取器结果（v2.5.0 新增）
+        
+        策略：
+        1. 优先 Syft（覆盖大部分场景）
+        2. 自研提取器作为补充（覆盖 Syft 遗漏的库文件）
+        3. 全局去重：(name, version)
+        """
+        components = []
+        syft_components = []
+        custom_components = []
+        
+        # 路径 1: Syft
+        if self.syft_available:
+            try:
+                if os.path.isdir(firmware_path):
+                    syft_components = self.generate_syft_sbom(firmware_path)
+                else:
+                    syft_components = self.generate_syft_sbom(firmware_path)
+                logger.info(f"Syft 识别 {len(syft_components)} 个组件")
+            except Exception as e:
+                logger.warning(f"Syft 失败：{e}")
+        else:
+            logger.info("Syft 不可用，跳过")
+        
+        # 路径 2: 自研提取器（补充）
+        try:
+            if os.path.isdir(firmware_path):
+                # 已解压目录
+                custom_components = self.extract_squashfs_components_from_dir(firmware_path)
+            else:
+                # 固件文件
+                if firmware_type == 'auto':
+                    firmware_type = self._detect_firmware_type(firmware_path)
+                
+                if firmware_type == 'squashfs':
+                    custom_components = self.extract_squashfs_components(firmware_path)
+                elif firmware_type == 'bin':
+                    custom_components = self.extract_mcu_components(firmware_path)
+            
+            logger.info(f"自研提取器识别 {len(custom_components)} 个组件")
+        except Exception as e:
+            logger.warning(f"自研提取器失败：{e}")
+        
+        # 合并去重
+        seen = set()
+        merged = []
+        
+        # 优先添加 Syft 结果
+        for comp in syft_components:
+            key = (comp.name, comp.version)
+            if key not in seen:
+                seen.add(key)
+                merged.append(comp)
+        
+        # 补充自研提取器结果（去重）
+        added_count = 0
+        for comp in custom_components:
+            key = (comp.name, comp.version)
+            if key not in seen:
+                seen.add(key)
+                merged.append(comp)
+                added_count += 1
+        
+        logger.info(f"合并结果：Syft={len(syft_components)} + 自研={len(custom_components)} → 总计={len(merged)}（新增 {added_count} 个）")
+        return merged
     
     def _detect_firmware_type(self, firmware_path: str) -> str:
         """使用 file 命令检测固件类型，支持 OpenWrt 等嵌套 SquashFS 固件"""
