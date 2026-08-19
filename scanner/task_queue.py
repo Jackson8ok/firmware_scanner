@@ -436,6 +436,8 @@ class ScanQueue:
             # ========== 阶段 3: CVE 匹配 (进度 60-90%)
             update_progress("cve_matching", 65, "正在查询漏洞数据库")
             
+            vulnerabilities = []
+            
             # 配置 Grype 路径（优先 config.yaml，其次环境变量，最后默认路径）
             grype_bin = config.get('paths', {}).get('grype_bin')
             if grype_bin and '${' in grype_bin:
@@ -449,33 +451,53 @@ class ScanQueue:
             else:
                 grype_bin = os.environ.get('GRYPE_BIN', '')
             
-            grype_db_path = config.get('paths', {}).get('grype_db')
-            if grype_db_path and '${' in grype_db_path:
-                import re
-                for match in re.finditer(r'[\$]\{([^}:]+)(?::-([^}]*))?[\}]', grype_db_path):
-                    var_name = match.group(1)
-                    default_val = match.group(2) if match.group(2) is not None else ''
-                    grype_db_path = grype_db_path.replace(match.group(0), os.environ.get(var_name, default_val))
+            # 尝试使用 grype CLI（v2.5.0 新特性）
+            grype_cli_available = False
+            if grype_bin and Path(grype_bin).exists():
+                try:
+                    from .grype_matcher import GrypeCLIMatcher
+                    matcher = GrypeCLIMatcher(grype_bin=grype_bin)
+                    vulnerabilities = matcher.scan(target_path, source_type="directory")
+                    
+                    # grype CLI 已做版本约束，但保留优先级计算以兼容下游逻辑
+                    for vuln in vulnerabilities:
+                        vuln.calculate_priority()
+                    
+                    logger.info(f"✅ grype CLI 扫描完成：{len(vulnerabilities)} 个 CVE")
+                    grype_cli_available = True
+                    
+                except Exception as e:
+                    logger.warning(f"⚠️ grype CLI 失败，降级到自研匹配器：{e}")
+                    vulnerabilities = []
             
-            if not grype_db_path:
-                grype_db_path = os.environ.get('GRYPE_DB_PATH', './data/grype.db')
-            
-            grype_db_path = os.path.expanduser(grype_db_path)
-            
-            if not os.path.exists(grype_db_path):
-                logger.error(f"Grype DB 不存在：{grype_db_path}，无法进行 CVE 匹配")
-                vulnerabilities = []
-                # 标记 CVE 匹配阶段失败
-                update_progress("cve_matching", 90, "CVE 数据库缺失，漏洞匹配跳过")
-            else:
-                matcher = CVEMatcher(grype_db_path)
-                vulnerabilities = matcher.query_vulnerabilities(components)
+            # 降级：自研匹配器
+            if not grype_cli_available:
+                grype_db_path = config.get('paths', {}).get('grype_db')
+                if grype_db_path and '${' in grype_db_path:
+                    import re
+                    for match in re.finditer(r'[\$]\{([^}:]+)(?::-([^}]*))?[\}]', grype_db_path):
+                        var_name = match.group(1)
+                        default_val = match.group(2) if match.group(2) is not None else ''
+                        grype_db_path = grype_db_path.replace(match.group(0), os.environ.get(var_name, default_val))
                 
-                # 计算优先级
-                for vuln in vulnerabilities:
-                    vuln.calculate_priority()
+                if not grype_db_path:
+                    grype_db_path = os.environ.get('GRYPE_DB_PATH', './data/grype.db')
                 
-                logger.info(f"找到 {len(vulnerabilities)} 个 CVE")
+                grype_db_path = os.path.expanduser(grype_db_path)
+                
+                if not os.path.exists(grype_db_path):
+                    logger.error(f"Grype DB 不存在：{grype_db_path}，无法进行 CVE 匹配")
+                    vulnerabilities = []
+                    update_progress("cve_matching", 90, "CVE 数据库缺失，漏洞匹配跳过")
+                else:
+                    matcher = CVEMatcher(grype_db_path)
+                    vulnerabilities = matcher.query_vulnerabilities(components)
+                    
+                    # 计算优先级
+                    for vuln in vulnerabilities:
+                        vuln.calculate_priority()
+                    
+                    logger.info(f"找到 {len(vulnerabilities)} 个 CVE（自研匹配器）")
             
             update_progress("cve_matching", 80, "CVE 匹配完成")
             
