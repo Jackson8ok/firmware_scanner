@@ -114,7 +114,6 @@ class GrypeCLIMatcher:
         cmd = [
             self.grype_bin,
             "-o", "json",
-            "--fail-on-severity", "unknown",
             "--only-fixed",  # 仅报告有修复版本的 CVE
         ]
         
