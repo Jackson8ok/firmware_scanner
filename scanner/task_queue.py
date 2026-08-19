@@ -512,7 +512,7 @@ class ScanQueue:
                     'severity': v.severity,
                     'cvss_score': v.cvss_score,
                     'description': v.description[:500],
-                    'published_date': datetime.now().isoformat(),
+                    'published_date': v.published_date.isoformat() if v.published_date else None,
                     'fixed_version': getattr(v, 'fixed_version', None)
                 })
             

@@ -10,6 +10,7 @@
 
 import os
 import sys
+import asyncio
 from pathlib import Path
 from typing import List, Optional
 from datetime import datetime
@@ -282,7 +283,7 @@ async def health_check():
     """健康检查端点"""
     return {
         "status": "healthy",
-        "version": "2.4.1-hotfix",
+        "version": "2.4.3",
         "websocket": "enabled",
         "timestamp": datetime.now().isoformat()
     }

@@ -98,6 +98,7 @@ class Vulnerability:
     published_date: datetime
     epss_score: Optional[float] = None
     priority_score: Optional[float] = None
+    version_status: str = "matched"  # DEF-NEW-03: 版本匹配状态 (matched / unknown / not_matched)
     
     def is_r155_non_compliant(self, days_threshold: int = 180):
         """检查是否 R155 不合规 (CVSS>=7.0 且>180 天未修复)"""
@@ -105,6 +106,9 @@ class Vulnerability:
             return False
         if self.published_date is None:
             # 未知发布日期时不做超期判定，避免误报
+            return False
+        # DEF-NEW-03: 版本未知时不计入 R155 判定
+        if self.version_status == "unknown":
             return False
         age_days = (datetime.now() - self.published_date).days
         return age_days > days_threshold and not self.fixed_version
@@ -508,9 +512,16 @@ class SBOMGenerator:
             logger.error("❌ 固件路径为空")
             return []
         
-        # 如果传入的是目录（已解压），直接从目录提取组件
+        # 如果传入的是目录（已解压），优先使用 Syft 扫描
         if os.path.isdir(firmware_path):
-            logger.info(f"检测到目录输入，直接从目录提取组件")
+            logger.info(f"检测到目录输入，优先使用 Syft 扫描")
+            if self.syft_available:
+                try:
+                    return self.generate_syft_sbom(firmware_path)
+                except Exception as e:
+                    logger.warning(f"Syft 目录扫描失败，降级到自研提取器：{e}")
+            # Syft 不可用或失败时，降级到目录组件提取
+            logger.info(f"从目录提取组件（降级方案）")
             return self.extract_squashfs_components_from_dir(firmware_path)
         
         # 自动检测类型
@@ -1017,18 +1028,26 @@ class CVEMatcher:
         logger.info(f"已连接 Grype 数据库：{self.db_path}")
     
     def query_vulnerabilities(self, components: List[Component]) -> List[Vulnerability]:
-        """为组件列表查询 CVE"""
+        """为组件列表查询 CVE（DEF-NEW-04: 全局去重）"""
         logger.info(f"开始 CVE 查询，组件数：{len(components)}")
         vulnerabilities = []
+        seen = set()  # (cve_id, component_name, version) 用于去重
         
         for i, comp in enumerate(components):
             if (i + 1) % 50 == 0:
                 logger.info(f"正在查询组件 {i+1}/{len(components)}: {comp.name}")
             
             comp_vulns = self._query_component(comp)
-            vulnerabilities.extend(comp_vulns)
+            for vuln in comp_vulns:
+                # DEF-NEW-04: 按 (cve_id, component_name, version) 去重
+                key = (vuln.cve_id, vuln.component_name, vuln.component_version)
+                if key not in seen:
+                    seen.add(key)
+                    vulnerabilities.append(vuln)
+                else:
+                    logger.debug(f"CVE 去重：{vuln.cve_id} ({vuln.component_name} {vuln.component_version})")
         
-        logger.info(f"CVE 查询完成，发现 {len(vulnerabilities)} 个漏洞")
+        logger.info(f"CVE 查询完成，发现 {len(vulnerabilities)} 个漏洞（去重后）")
         return vulnerabilities
     
     def _query_component(self, component: Component) -> List[Vulnerability]:
@@ -1086,6 +1105,13 @@ class CVEMatcher:
                         value = sev.get('value')
                         if isinstance(value, dict):
                             cvss_vector = value.get('vector', '')
+                            # DEF-NEW-05: 提取 CVSS score
+                            cvss_score = value.get('score', 0.0)
+                            if isinstance(cvss_score, str):
+                                try:
+                                    cvss_score = float(cvss_score)
+                                except ValueError:
+                                    cvss_score = 0.0
                             # P0-3 修复：从 CVSS vector 推断 severity（而非从 description）
                             severity = self._infer_severity_from_cvss_vector(cvss_vector)
                         elif isinstance(value, str):
@@ -1095,13 +1121,20 @@ class CVEMatcher:
                 if severity == 'Unknown':
                     severity = self._infer_severity_from_description(description)
                 
-                # P0-3 修复：解析版本约束，进行版本匹配
+                # DEF-NEW-03 修复：解析版本约束，进行版本匹配
                 version_matched = True
+                version_status = "matched"  # 版本匹配状态：matched / unknown / not_matched
                 fixed_version = None
+                
                 if component.version and component.version != 'unknown':
                     version_matched, fixed_version = self._match_version_with_ranges(
                         component.version, row['range_blob_json']
                     )
+                    if not version_matched:
+                        version_status = "not_matched"
+                else:
+                    # 版本未知时，保守策略：报告但标记为 unknown
+                    version_status = "unknown"
                 
                 # 如果不匹配版本约束，跳过
                 if not version_matched:
@@ -1116,7 +1149,8 @@ class CVEMatcher:
                     cvss_vector=cvss_vector,
                     description=description,
                     fixed_version=fixed_version,
-                    published_date=self._parse_date(row['published_date'])
+                    published_date=self._parse_date(row['published_date']),
+                    version_status=version_status  # DEF-NEW-03: 版本匹配状态
                 )
                 
                 # 避免重复
