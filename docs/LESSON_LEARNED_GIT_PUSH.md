@@ -44,49 +44,43 @@ ln -s /mnt/workspace/.ssh /root/.ssh  # ✅ 创建软链接
 
 ---
 
-## ✅ 解决方案
+## ✅ 解决方案（已封装为 Skill）
 
-### 短期修复（立即执行）
+### 长期修复（已实现）
+
+**已封装为 GitHub Auto Release Skill**
+
+技能位置：`/mnt/workspace/qwenpaw_workspaces/workspaces/default/skills/github_auto_release/`
+
+**1. 自动初始化脚本**
 ```bash
-# 重建软链接
-ln -s /mnt/workspace/.ssh /root/.ssh
+bash /mnt/workspace/qwenpaw_workspaces/workspaces/default/skills/github_auto_release/init_ssh.sh
 ```
 
-### 长期修复（自动化）
-
-**1. 创建初始化脚本**
+**2. Git 推送脚本**
 ```bash
-# /mnt/workspace/firmware_scanner/scripts/init_ssh.sh
-#!/bin/bash
-set -e
-
-# 检查并重建 /root/.ssh 软链接
-if [ ! -L "/root/.ssh" ]; then
-    ln -s /mnt/workspace/.ssh /root/.ssh
-fi
-
-# 验证 known_hosts
-if [ ! -f "/mnt/workspace/.ssh/known_hosts" ]; then
-    ssh-keyscan github.com >> /mnt/workspace/.ssh/known_hosts 2>/dev/null
-fi
+bash /mnt/workspace/qwenpaw_workspaces/workspaces/default/skills/github_auto_release/git_push.sh /path/to/repo main "commit message"
 ```
 
-**2. 添加到 .bashrc（每次登录自动执行）**
+**3. Release 创建脚本**
+```bash
+bash /mnt/workspace/qwenpaw_workspaces/workspaces/default/skills/github_auto_release/create_release.sh username/repo v2.5.0 "标题" docs/RELEASE_NOTES.md
+```
+
+**4. 状态检查脚本**
+```bash
+bash /mnt/workspace/qwenpaw_workspaces/workspaces/default/skills/github_auto_release/check_status.sh
+```
+
+**5. 添加到 .bashrc（每次登录自动执行）**
 ```bash
 # ~/.bashrc
-if [ -f /mnt/workspace/firmware_scanner/scripts/init_ssh.sh ]; then
-    source /mnt/workspace/firmware_scanner/scripts/init_ssh.sh
+if [ -f /mnt/workspace/qwenpaw_workspaces/workspaces/default/skills/github_auto_release/init_ssh.sh ]; then
+    source /mnt/workspace/qwenpaw_workspaces/workspaces/default/skills/github_auto_release/init_ssh.sh
 fi
 ```
 
-**3. 验证**
-```bash
-# 新终端登录应自动显示
-🔐 初始化 SSH 环境...
-✅ /root/.ssh 软链接已存在且指向正确
-✅ known_hosts 存在
-✅ GitHub SSH 连接成功
-```
+**详细文档**: `/mnt/workspace/qwenpaw_workspaces/workspaces/default/skills/github_auto_release/README.md`
 
 ---
 
