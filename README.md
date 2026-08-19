@@ -328,8 +328,8 @@ curl -X POST http://localhost:8000/api/batch-upload \
          │        扫描引擎层               │
          ├────────────────────────────────┤
          │ • 固件提取 (Binwalk/7-Zip)     │
-         │ • SBOM 生成器                   │
-         │ • CVE 匹配引擎                  │
+         │ • SBOM 生成 (Syft + 自研合并)  │
+         │ • CVE 匹配 (grype CLI)         │
          │ • EPSS 评分系统                 │
          │ • R155 合规检查器               │
          └────────────────────────────────┘
@@ -344,7 +344,8 @@ curl -X POST http://localhost:8000/api/batch-upload \
 | **前端** | HTML5, CSS3, Vanilla JavaScript |
 | **图表** | Chart.js, ECharts |
 | **固件分析** | Binwalk, 7-Zip, Unblob |
-| **漏洞库** | Grype (Anchore), NVD |
+| **SBOM 生成** | Syft + 自研提取器（合并） |
+| **CVE 匹配** | grype CLI v0.115+ (Anchore) |
 | **部署** | Docker, GitHub Actions CI/CD |
 
 ---
