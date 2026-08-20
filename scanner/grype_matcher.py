@@ -11,6 +11,7 @@ grype CLI 匹配器 - v2.5.0 核心组件
 
 import json
 import subprocess
+import os  # 添加 os 导入
 import logging
 from pathlib import Path
 from typing import List, Optional
@@ -83,12 +84,20 @@ class GrypeCLIMatcher:
         logger.info(f"🔍 调用 grype CLI 扫描：{target_path}")
         logger.debug(f"命令：{' '.join(cmd)}")
         
+        # 设置环境变量使用配置文件
+        env = os.environ.copy()
+        grype_config_path = os.path.join(os.path.dirname(self.grype_bin), "grype.yaml")
+        if Path(grype_config_path).exists():
+            env["GRYPE_CONFIG"] = grype_config_path
+            logger.debug(f"使用 grype 配置：{grype_config_path}")
+        
         try:
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=self.timeout
+                timeout=self.timeout,
+                env=env
             )
             
             if result.returncode != 0:
@@ -114,6 +123,7 @@ class GrypeCLIMatcher:
         cmd = [
             self.grype_bin,
             "-o", "json",
+            "--check-for-app-update=false",  # 跳过应用更新检查
         ]
         
         # 根据源类型添加参数
