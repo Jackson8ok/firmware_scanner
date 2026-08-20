@@ -123,7 +123,6 @@ class GrypeCLIMatcher:
         cmd = [
             self.grype_bin,
             "-o", "json",
-            "--check-for-app-update=false",  # 跳过应用更新检查
         ]
         
         # 根据源类型添加参数
@@ -149,9 +148,31 @@ class GrypeCLIMatcher:
         return cmd
     
     def _parse_grype_json(self, json_str: str) -> List[Vulnerability]:
-        """解析 grype JSON 输出"""
-        data = json.loads(json_str)
-        vulns = []
+        """解析 grype JSON 输出（过滤非 JSON 行）"""
+        # 过滤 grype 日志前缀，只保留 JSON 内容
+        json_lines = []
+        for line in json_str.splitlines():
+            line = line.strip()
+            # 跳过 grype 日志行：以 [时间戳] 开头或包含 WARN/ERROR
+            if line.startswith('[') and ']' in line:
+                continue
+            if line.startswith('WARN') or line.startswith('ERROR'):
+                continue
+            if line:
+                json_lines.append(line)
+        
+        if not json_lines:
+            logger.warning("grype 输出为空，未找到 JSON 数据")
+            return []
+        
+        json_content = '\n'.join(json_lines)
+        
+        try:
+            data = json.loads(json_content)
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON 解析失败：{e}")
+            logger.debug(f"原始内容：{json_content[:500]}")
+            return []
         
         for match in data.get("matches", []):
             try:
