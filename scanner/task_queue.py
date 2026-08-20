@@ -459,8 +459,35 @@ class ScanQueue:
                     from .grype_matcher import GrypeCLIMatcher
                     matcher = GrypeCLIMatcher(grype_bin=grype_bin, timeout=600)
                     
-                    # v2.5.0 优化：直接扫描解压目录（已验证可行）
-                    vulnerabilities = matcher.scan(str(extracted_path), source_type="directory")
+                    # v2.5.0 优化：先生成 SBOM 文件，再扫描 SBOM（比扫描目录快）
+                    import json
+                    sbom_path = os.path.join(os.path.dirname(extracted_path), f"{task.task_id}.sbom.json")
+                    
+                    # 为组件生成 purl（package URL）
+                    def generate_purl(name: str, version: str) -> str:
+                        """生成伪 purl（用于 grype CLI 匹配）"""
+                        name_lower = name.lower().replace("_", "-").replace(" ", "-")
+                        version_clean = version.split("_")[0] if "_" in version else version
+                        return f"pkg:generic/{name_lower}@{version_clean}"
+                    
+                    sbom_data = {
+                        "bomFormat": "CycloneDX",
+                        "specVersion": "1.4",
+                        "components": [
+                            {
+                                "type": "application",
+                                "name": c.name,
+                                "version": c.version or "unknown",
+                                "purl": generate_purl(c.name, c.version or "unknown")
+                            }
+                            for c in components
+                        ]
+                    }
+                    with open(sbom_path, 'w') as f:
+                        json.dump(sbom_data, f, indent=2)
+                    logger.info(f"[DEBUG] SBOM 文件已生成：{sbom_path}，组件数：{len(components)}")
+                    
+                    vulnerabilities = matcher.scan(sbom_path, source_type="sbom")
                     
                     # grype CLI 已做版本约束，但保留优先级计算以兼容下游逻辑
                     for vuln in vulnerabilities:

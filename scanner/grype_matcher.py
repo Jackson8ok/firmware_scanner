@@ -137,8 +137,8 @@ class GrypeCLIMatcher:
         
         # 添加排除路径（避免扫描工具自身）
         exclude_patterns = [
-            "/usr/local/bin/grype",
-            "/usr/local/bin/syft",
+            "./tools/grype",
+            "./tools/syft",
             "./cache",
             "./.git"
         ]
