@@ -469,8 +469,7 @@ class ScanQueue:
                             {
                                 "type": "application",
                                 "name": c.name,
-                                "version": c.version,
-                                "purl": c.purl
+                                "version": c.version or "unknown"
                             }
                             for c in components
                         ]
