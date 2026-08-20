@@ -174,6 +174,7 @@ class GrypeCLIMatcher:
             logger.debug(f"原始内容：{json_content[:500]}")
             return []
         
+        vulns = []
         for match in data.get("matches", []):
             try:
                 vuln = self._convert_match_to_vulnerability(match)
