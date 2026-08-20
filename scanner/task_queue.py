@@ -431,6 +431,7 @@ class ScanQueue:
             target_path = str(extracted_path)
             components = sbom_gen.generate_sbom(target_path, task.firmware_type)
             
+            logger.info(f"[DEBUG] SBOM 生成完成，组件数：{len(components)}")
             update_progress("sbom_generation", 55, f"识别到 {len(components)} 个组件")
             
             # ========== 阶段 3: CVE 匹配 (进度 60-90%)
@@ -456,8 +457,29 @@ class ScanQueue:
             if grype_bin and Path(grype_bin).exists():
                 try:
                     from .grype_matcher import GrypeCLIMatcher
-                    matcher = GrypeCLIMatcher(grype_bin=grype_bin)
-                    vulnerabilities = matcher.scan(target_path, source_type="directory")
+                    matcher = GrypeCLIMatcher(grype_bin=grype_bin, timeout=600)
+                    
+                    # v2.5.0 优化：先生成 SBOM 文件，再扫描 SBOM（比扫描目录快）
+                    import json
+                    sbom_path = os.path.join(os.path.dirname(extracted_path), f"{task.task_id}.sbom.json")
+                    sbom_data = {
+                        "bomFormat": "CycloneDX",
+                        "specVersion": "1.4",
+                        "components": [
+                            {
+                                "type": "application",
+                                "name": c.name,
+                                "version": c.version,
+                                "purl": c.purl
+                            }
+                            for c in components
+                        ]
+                    }
+                    with open(sbom_path, 'w') as f:
+                        json.dump(sbom_data, f, indent=2)
+                    logger.info(f"[DEBUG] SBOM 文件已生成：{sbom_path}，组件数：{len(components)}")
+                    
+                    vulnerabilities = matcher.scan(sbom_path, source_type="sbom")
                     
                     # grype CLI 已做版本约束，但保留优先级计算以兼容下游逻辑
                     for vuln in vulnerabilities:
@@ -466,12 +488,21 @@ class ScanQueue:
                     logger.info(f"✅ grype CLI 扫描完成：{len(vulnerabilities)} 个 CVE")
                     grype_cli_available = True
                     
+                    # 清理临时 SBOM 文件
+                    try:
+                        os.remove(sbom_path)
+                    except:
+                        pass
+                    
                 except Exception as e:
                     logger.warning(f"⚠️ grype CLI 失败，降级到自研匹配器：{e}")
+                    logger.warning(f"[DEBUG] 降级时组件数：{len(components)}")
                     vulnerabilities = []
+                    grype_cli_available = False
             
             # 降级：自研匹配器
             if not grype_cli_available:
+                logger.info(f"[DEBUG] 使用自研匹配器，组件数：{len(components)}")
                 grype_db_path = config.get('paths', {}).get('grype_db')
                 if grype_db_path and '${' in grype_db_path:
                     import re

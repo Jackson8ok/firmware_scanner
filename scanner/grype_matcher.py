@@ -26,7 +26,7 @@ class GrypeCLIMatcher:
     
     def __init__(self, grype_bin: str = "/usr/local/bin/grype", 
                  cache_dir: str = "./cache/grype",
-                 timeout: int = 300):
+                 timeout: int = 600):  # 增加到 600 秒
         """
         初始化 grype CLI 匹配器
         
@@ -114,15 +114,17 @@ class GrypeCLIMatcher:
         cmd = [
             self.grype_bin,
             "-o", "json",
-            "--only-fixed",  # 仅报告有修复版本的 CVE
         ]
         
         # 根据源类型添加参数
         if source_type == "sbom":
-            cmd.extend(["-s", "syft", target_path])
+            # SBOM 模式：grype sbom:<path>
+            cmd.extend([f"sbom:{target_path}"])
+            logger.info(f"🔍 grype CLI SBOM 模式：{target_path}")
         else:
             # directory 模式
             cmd.append(target_path)
+            logger.info(f"🔍 grype CLI 目录模式：{target_path}")
         
         # 添加排除路径（避免扫描工具自身）
         exclude_patterns = [
