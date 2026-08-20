@@ -126,13 +126,23 @@ class EPSSCacheManager:
             "https://epss.cyentia.com/epss_scores-current.csv.gz",
         ]
         
+        # 快速网络连通性检查（避免在无网络环境下长时间阻塞）
+        try:
+            import socket
+            socket.gethostbyname("epss.first.org")
+        except socket.gaierror:
+            logger.warning("网络不可达（DNS 解析失败），跳过 EPSS 下载")
+            return False
+        except Exception:
+            pass
+        
         # 首选 JSON 格式
         for url in urls:
             try:
                 logger.info(f"正在下载 EPSS 数据集：{url}")
                 
                 if 'json' in url:
-                    response = requests.get(url, timeout=300)
+                    response = requests.get(url, timeout=30)  # 减少超时时间
                     response.raise_for_status()
                     
                     import gzip
@@ -144,7 +154,7 @@ class EPSSCacheManager:
                     return self._import_json_data(data)
                 
                 elif 'csv' in url:
-                    response = requests.get(url, timeout=300)
+                    response = requests.get(url, timeout=30)  # 减少超时时间
                     response.raise_for_status()
                     
                     import gzip
