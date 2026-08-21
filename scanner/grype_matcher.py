@@ -198,40 +198,55 @@ class GrypeCLIMatcher:
         return unique_vulns
     
     def _convert_match_to_vulnerability(self, match: dict) -> Vulnerability:
-        """将 grype match 转换为平台 Vulnerability 格式"""
+        """将 grype match 转换为平台 Vulnerability 格式（v2.5.1 字段补全修复）"""
         vuln_data = match.get("vulnerability", {})
         artifact = match.get("artifact", {})
         fix = match.get("fix", {})
         
-        # 解析 CVSS
+        # 解析 CVSS（v2.5.1 修复：正确路径是 cvss[].metrics.baseScore）
         cvss_score = 0.0
         cvss_vector = ""
         severity = "Unknown"
         
         cvss_data = vuln_data.get("cvss", [])
         if isinstance(cvss_data, list):
-            # grype 返回 CVSS 列表，取第一个
             for cvss_entry in cvss_data:
                 if isinstance(cvss_entry, dict):
-                    cvss_score = float(cvss_entry.get("baseScore", 0.0))
-                    cvss_vector = cvss_entry.get("vector", "")
-                    severity = cvss_entry.get("severity", "Unknown")
+                    # v2.5.1 修复：grype 输出结构是 cvss[].metrics.baseScore
+                    metrics = cvss_entry.get("metrics", {})
+                    if isinstance(metrics, dict):
+                        cvss_score = float(metrics.get("baseScore", 0.0))
+                        cvss_vector = metrics.get("vectorString", cvss_entry.get("vector", ""))
+                        severity = metrics.get("severity", cvss_entry.get("severity", "Unknown"))
+                    else:
+                        # 降级兼容旧格式
+                        cvss_score = float(cvss_entry.get("baseScore", 0.0))
+                        cvss_vector = cvss_entry.get("vector", "")
+                        severity = cvss_entry.get("severity", "Unknown")
                     break
         elif isinstance(cvss_data, dict):
-            # 单 CVSS 对象
-            cvss_score = float(cvss_data.get("baseScore", 0.0))
-            cvss_vector = cvss_data.get("vector", "")
-            severity = cvss_data.get("severity", "Unknown")
+            metrics = cvss_data.get("metrics", {})
+            if isinstance(metrics, dict):
+                cvss_score = float(metrics.get("baseScore", 0.0))
+                cvss_vector = metrics.get("vectorString", cvss_data.get("vector", ""))
+                severity = metrics.get("severity", cvss_data.get("severity", "Unknown"))
+            else:
+                cvss_score = float(cvss_data.get("baseScore", 0.0))
+                cvss_vector = cvss_data.get("vector", "")
+                severity = cvss_data.get("severity", "Unknown")
         
         # 如果 CVSS 中没有 severity，从 top-level severity 获取
         if severity == "Unknown":
             severity = vuln_data.get("severity", "Unknown")
         
-        # 解析发布日期
-        published_date = self._parse_date(vuln_data.get("publishedDate"))
+        # 解析发布日期（v2.5.1：grype 输出无此字段，需从 Grype DB 补查）
+        published_date = self._get_published_date_from_db(vuln_data.get("id", ""))
         
         # 获取修复版本
         fixed_version = fix.get("version")
+        
+        # v2.5.1 修复：读取 EPSS 字段（grype 输出中有 epss 数组）
+        epss_score = self._extract_epss_from_grype(vuln_data)
         
         return Vulnerability(
             cve_id=vuln_data.get("id", ""),
@@ -243,9 +258,53 @@ class GrypeCLIMatcher:
             description=vuln_data.get("description", ""),
             fixed_version=fixed_version,
             published_date=published_date,
-            epss_score=None,  # 后续通过 EPSS 管理器补充
-            version_status="matched"  # grype CLI 已做版本约束
+            epss_score=epss_score,
+            version_status="matched"
         )
+    
+    def _extract_epss_from_grype(self, vuln_data: dict) -> Optional[float]:
+        """从 grype 输出中提取 EPSS 分数（v2.5.1 新增）"""
+        epss_list = vuln_data.get("epss", [])
+        if isinstance(epss_list, list) and len(epss_list) > 0:
+            epss_entry = epss_list[0]
+            if isinstance(epss_entry, dict):
+                # grype 输出：epss[0].epss 是分数，epss[0].percentile 是百分位
+                epss = epss_entry.get("epss")
+                if epss is not None:
+                    try:
+                        return float(epss)
+                    except (ValueError, TypeError):
+                        pass
+        return None
+    
+    def _get_published_date_from_db(self, cve_id: str) -> Optional[datetime]:
+        """从 Grype DB 查询 CVE 发布日期（v2.5.1 新增）"""
+        if not cve_id:
+            return None
+        
+        try:
+            # 复用 engine.py 中的 EPSS 管理器获取 Grype DB 连接
+            from .engine import get_epss_manager
+            epss_mgr = get_epss_manager()
+            if epss_mgr and epss_mgr.conn:
+                cursor = epss_mgr.conn.cursor()
+                cursor.execute("""
+                    SELECT published_date FROM vulnerability_handles
+                    WHERE cve = ?
+                    LIMIT 1
+                """, (cve_id,))
+                row = cursor.fetchone()
+                if row and row['published_date']:
+                    date_str = row['published_date']
+                    # 解析日期格式：YYYY-MM-DD HH:MM:SS
+                    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+                        try:
+                            return datetime.strptime(date_str, fmt)
+                        except ValueError:
+                            continue
+        except Exception as e:
+            logger.debug(f"查询 Grype DB published_date 失败 ({cve_id}): {e}")
+        return None
     
     def _parse_date(self, date_str: Optional[str]) -> Optional[datetime]:
         """解析日期字符串"""
