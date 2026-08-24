@@ -318,21 +318,17 @@ class GrypeCLIMatcher:
             
             if row and row['published_date']:
                 date_str = row['published_date']
-                # v2.5.2 修复：解析带时区的日期格式
-                try:
-                    # 格式：2023-08-22 19:16:31.08+00:00 或 2023-08-22 19:16:31
-                    # 去掉时区部分，保留日期时间
-                    if '+' in date_str:
-                        date_str = date_str.split('+')[0]
-                    
-                    # 尝试多种格式
-                    for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
-                        try:
-                            return datetime.strptime(date_str, fmt)
-                        except ValueError:
-                            continue
-                except Exception as e:
-                    logger.debug(f"解析 published_date 失败 ({cve_id}): {e}")
+                # v2.5.3 修复：简单去掉时区部分（仅 1 行）
+                # 输入: '2023-08-22 19:16:31.08+00:00'
+                # 输出: '2023-08-22 19:16:31.08'
+                if '+' in date_str:
+                    date_str = date_str.split('+')[0]
+                
+                for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+                    try:
+                        return datetime.strptime(date_str, fmt)
+                    except ValueError:
+                        continue
                     
         except Exception as e:
             logger.debug(f"查询 Grype DB published_date 失败 ({cve_id}): {e}")

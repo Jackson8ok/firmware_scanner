@@ -151,7 +151,7 @@ from socketio import ASGIApp
 
 _base_app = FastAPI(
     title="固件漏洞扫描平台", 
-    version="2.5.2",
+    version="2.5.3",
     description="已启用 WebSocket 实时通知的固件安全扫描器"
 )
 
@@ -283,7 +283,7 @@ async def health_check():
     """健康检查端点"""
     return {
         "status": "healthy",
-        "version": "2.5.2",
+        "version": "2.5.3",
         "websocket": "enabled",
         "timestamp": datetime.now().isoformat()
     }
