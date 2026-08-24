@@ -284,11 +284,18 @@ class GrypeCLIMatcher:
         
         try:
             # v2.5.2 修复：直接连接 Grype DB（而非 EPSS 缓存库）
-            grype_db_path = os.path.join(os.path.dirname(self.grype_bin), "..", "db", "grype", "6", "vulnerability.db")
-            grype_db_path = os.path.normpath(grype_db_path)
+            # 优先使用环境变量或配置文件中的路径
+            grype_db_path = os.environ.get("GRYPE_DB_PATH", 
+                "/mnt/workspace/firmware_scanner/db/grype/6/vulnerability.db")
             
             if not Path(grype_db_path).exists():
-                # 尝试备用路径
+                # 尝试备用路径（相对路径）
+                alt_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "db", "grype", "6", "vulnerability.db")
+                if Path(alt_path).exists():
+                    grype_db_path = alt_path
+            
+            if not Path(grype_db_path).exists():
+                logger.debug(f"Grype DB 未找到，尝试默认路径")
                 grype_db_path = "/mnt/workspace/firmware_scanner/db/grype/6/vulnerability.db"
             
             if not Path(grype_db_path).exists():
@@ -311,23 +318,19 @@ class GrypeCLIMatcher:
             
             if row and row['published_date']:
                 date_str = row['published_date']
-                # v2.5.2 修复：使用 fromisoformat 兼容时区与毫秒格式
+                # v2.5.2 修复：解析带时区的日期格式
                 try:
                     # 格式：2023-08-22 19:16:31.08+00:00 或 2023-08-22 19:16:31
-                    if '+' in date_str or '-' in date_str[10:]:
-                        # 有时区信息，去掉时区部分
-                        date_str = date_str.split('+')[0].split('-')[0] + '-' + date_str.split('-')[1]
-                        for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
-                            try:
-                                return datetime.strptime(date_str, fmt)
-                            except ValueError:
-                                continue
-                    else:
-                        for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
-                            try:
-                                return datetime.strptime(date_str, fmt)
-                            except ValueError:
-                                continue
+                    # 去掉时区部分，保留日期时间
+                    if '+' in date_str:
+                        date_str = date_str.split('+')[0]
+                    
+                    # 尝试多种格式
+                    for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+                        try:
+                            return datetime.strptime(date_str, fmt)
+                        except ValueError:
+                            continue
                 except Exception as e:
                     logger.debug(f"解析 published_date 失败 ({cve_id}): {e}")
                     
