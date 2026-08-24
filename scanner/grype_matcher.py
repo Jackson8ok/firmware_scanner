@@ -278,30 +278,59 @@ class GrypeCLIMatcher:
         return None
     
     def _get_published_date_from_db(self, cve_id: str) -> Optional[datetime]:
-        """从 Grype DB 查询 CVE 发布日期（v2.5.1 新增）"""
+        """从 Grype DB 查询 CVE 发布日期（v2.5.2 修复：查对库 + 列名）"""
         if not cve_id:
             return None
         
         try:
-            # 复用 engine.py 中的 EPSS 管理器获取 Grype DB 连接
-            from .engine import get_epss_manager
-            epss_mgr = get_epss_manager()
-            if epss_mgr and epss_mgr.conn:
-                cursor = epss_mgr.conn.cursor()
-                cursor.execute("""
-                    SELECT published_date FROM vulnerability_handles
-                    WHERE cve = ?
-                    LIMIT 1
-                """, (cve_id,))
-                row = cursor.fetchone()
-                if row and row['published_date']:
-                    date_str = row['published_date']
-                    # 解析日期格式：YYYY-MM-DD HH:MM:SS
-                    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
-                        try:
-                            return datetime.strptime(date_str, fmt)
-                        except ValueError:
-                            continue
+            # v2.5.2 修复：直接连接 Grype DB（而非 EPSS 缓存库）
+            grype_db_path = os.path.join(os.path.dirname(self.grype_bin), "..", "db", "grype", "6", "vulnerability.db")
+            grype_db_path = os.path.normpath(grype_db_path)
+            
+            if not Path(grype_db_path).exists():
+                # 尝试备用路径
+                grype_db_path = "/mnt/workspace/firmware_scanner/db/grype/6/vulnerability.db"
+            
+            if not Path(grype_db_path).exists():
+                logger.debug(f"Grype DB 未找到：{grype_db_path}")
+                return None
+            
+            import sqlite3
+            conn = sqlite3.connect(grype_db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            # v2.5.2 修复：列名 cve → name（vulnerability_handles 表的 CVE 列名为 name）
+            cursor.execute("""
+                SELECT published_date FROM vulnerability_handles
+                WHERE name = ?
+                LIMIT 1
+            """, (cve_id,))
+            row = cursor.fetchone()
+            conn.close()
+            
+            if row and row['published_date']:
+                date_str = row['published_date']
+                # v2.5.2 修复：使用 fromisoformat 兼容时区与毫秒格式
+                try:
+                    # 格式：2023-08-22 19:16:31.08+00:00 或 2023-08-22 19:16:31
+                    if '+' in date_str or '-' in date_str[10:]:
+                        # 有时区信息，去掉时区部分
+                        date_str = date_str.split('+')[0].split('-')[0] + '-' + date_str.split('-')[1]
+                        for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+                            try:
+                                return datetime.strptime(date_str, fmt)
+                            except ValueError:
+                                continue
+                    else:
+                        for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+                            try:
+                                return datetime.strptime(date_str, fmt)
+                            except ValueError:
+                                continue
+                except Exception as e:
+                    logger.debug(f"解析 published_date 失败 ({cve_id}): {e}")
+                    
         except Exception as e:
             logger.debug(f"查询 Grype DB published_date 失败 ({cve_id}): {e}")
         return None
