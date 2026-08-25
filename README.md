@@ -1,4 +1,6 @@
-# 🐢 玄武 - 固件漏洞扫描平台
+# 🐢 玄武·AFVS
+
+**Auto Firmware Vulnerability Scanner** - 汽车固件漏洞扫描器
 
 <div align="center">
 

@@ -1,4 +1,5 @@
-# 固件漏洞扫描平台配置
+# 玄武·AFVS 配置
+# Auto Firmware Vulnerability Scanner (汽车固件漏洞扫描器)
 
 server:
   host: "127.0.0.1"
