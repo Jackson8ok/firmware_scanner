@@ -59,7 +59,7 @@
 
 ```bash
 # Windows (PowerShell) / macOS / Linux
-git clone https://github.com/Jackson8ok/firmware_scanner.git
+git clone https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner.git
 cd firmware_scanner
 ```
 
@@ -142,7 +142,7 @@ choco install squashfs-tools
 #### 步骤 4: 克隆项目
 
 ```powershell
-git clone https://github.com/Jackson8ok/firmware_scanner.git
+git clone https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner.git
 cd firmware_scanner
 ```
 
@@ -186,7 +186,7 @@ brew install python@3.11 git squashfs p7zip
 #### 步骤 3: 克隆项目
 
 ```bash
-git clone https://github.com/Jackson8ok/firmware_scanner.git
+git clone https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner.git
 cd firmware_scanner
 ```
 
@@ -225,7 +225,7 @@ sudo apt install -y python3 python3-pip python3-venv git squashfs-tools p7zip-fu
 #### 步骤 2: 克隆项目
 
 ```bash
-git clone https://github.com/Jackson8ok/firmware_scanner.git
+git clone https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner.git
 cd firmware_scanner
 ```
 
@@ -629,7 +629,7 @@ CPU: Intel i7-12700K (12 核)
 
 ```bash
 # 1. 下载项目
-git clone https://github.com/Jackson8ok/firmware_scanner.git
+git clone https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner.git
 
 # 2. 下载 Python 依赖
 cd firmware_scanner
@@ -682,7 +682,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # 克隆项目
-RUN git clone https://github.com/Jackson8ok/firmware_scanner.git .
+RUN git clone https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner.git .
 
 # 安装 Python 依赖
 RUN pip install -r requirements.txt
@@ -768,14 +768,14 @@ cd api && python main.py
 
 ### 文档
 
-- [项目 README](https://github.com/Jackson8ok/firmware_scanner)
+- [项目 README](https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner)
 - [架构设计文档](./ARCHITECTURE.md)
 - [API 文档](./api/README.md)
 - [漏洞对比报告](./docs/OpenWrt_Vulnerability_Comparison_Report_2026-08-18.md)
 
 ### 联系方式
 
-- **GitHub Issues**: [提交问题](https://github.com/Jackson8ok/firmware_scanner/issues)
+- **GitHub Issues**: [提交问题](https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/issues)
 - **邮箱**: zhu80k@163.com
 - **开发者**: 攻城狮阿信 [Jackson]
 

@@ -8,8 +8,8 @@
 ![Python](https://img.shields.io/badge/python-3.8+-green.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.111+-blue.svg)
 ![R155 Compliance](https://img.shields.io/badge/R155-R156%20Compliant-brightgreen)
-![Release](https://img.shields.io/github/v/release/Jackson8ok/firmware_scanner?label=Latest)
-[![Stars](https://img.shields.io/github/stars/Jackson8ok/firmware_scanner?style=social)](https://github.com/Jackson8ok/firmware_scanner/stargazers)
+![Release](https://img.shields.io/github/v/release/Jackson8ok/afvs-auto-firmware-vulnerability-scanner?label=Latest)
+[![Stars](https://img.shields.io/github/stars/Jackson8ok/afvs-auto-firmware-vulnerability-scanner?style=social)](https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/stargazers)
 
 **🚀 一键生成 R155 审计所需全部文档 · 固件安全分析 · SBOM自动化生成 · 漏洞优先级排序**
 
@@ -89,7 +89,7 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/Jackson8ok/firmware_scanner.git
+git clone https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner.git
 cd scanner
 
 # 启动服务
@@ -107,7 +107,7 @@ docker run -d \
   --name xuanwu-scanner \
   -p 8000:8000 \
   -v ./data:/app/data \
-  ghcr.io/Jackson8ok/firmware_scanner:latest
+  ghcr.io/Jackson8ok/afvs-auto-firmware-vulnerability-scanner:latest
   
 docker exec -it xuanwu-scanner tail -f logs/app.log
 ```
@@ -483,9 +483,9 @@ git push origin feature/amazing-feature
 
 ### 社区
 
-- 💬 [GitHub Discussions](https://github.com/Jackson8ok/firmware_scanner/discussions) - 实时讨论
-- 🐛 [GitHub Issues](https://github.com/Jackson8ok/firmware_scanner/issues) - 报告问题
-- ✨ [Feature Requests](https://github.com/Jackson8ok/firmware_scanner/discussions) - 建议功能
+- 💬 [GitHub Discussions](https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/discussions) - 实时讨论
+- 🐛 [GitHub Issues](https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/issues) - 报告问题
+- ✨ [Feature Requests](https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/discussions) - 建议功能
 
 ### 学习材料
 
@@ -498,10 +498,10 @@ git push origin feature/amazing-feature
 
 ## 📊 当前状态
 
-![GitHub stars](https://img.shields.io/github/stars/Jackson8ok/firmware_scanner?style=social)
-![GitHub forks](https://img.shields.io/github/forks/Jackson8ok/firmware_scanner?style=social)
-![GitHub issues](https://img.shields.io/github/issues/Jackson8ok/firmware_scanner)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/Jackson8ok/firmware_scanner)
+![GitHub stars](https://img.shields.io/github/stars/Jackson8ok/afvs-auto-firmware-vulnerability-scanner?style=social)
+![GitHub forks](https://img.shields.io/github/forks/Jackson8ok/afvs-auto-firmware-vulnerability-scanner?style=social)
+![GitHub issues](https://img.shields.io/github/issues/Jackson8ok/afvs-auto-firmware-vulnerability-scanner)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/Jackson8ok/afvs-auto-firmware-vulnerability-scanner)
 
 **里程碑达成:**
 
@@ -554,11 +554,11 @@ git push origin feature/amazing-feature
 
 - 项目负责人：攻城狮阿信[Jackson]
 - Email: zhu80k@163.com
-- GitHub: https://github.com/Jackson8ok/firmware_scanner
+- GitHub: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner
 - 地址：中国·上海
 
 ---
 
 **Made with ❤️ by the 玄武团队**
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Jackson8ok/firmware_scanner&type=Date)](https://star-history.com/#Jackson8ok/firmware_scanner&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=Jackson8ok/afvs-auto-firmware-vulnerability-scanner&type=Date)](https://star-history.com/#Jackson8ok/afvs-auto-firmware-vulnerability-scanner&Date)

@@ -345,5 +345,5 @@ curl http://localhost:8765/api/task/{task_id}/result
 
 **维护者**: 攻城狮阿信 [Jackson]  
 **联系方式**: zhu80k@163.com  
-**GitHub**: [Jackson8ok/firmware_scanner](https://github.com/Jackson8ok/firmware_scanner)  
+**GitHub**: [Jackson8ok/firmware_scanner](https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner)  
 **状态**: ⏳ 修复中（P0 已完成，P0/P1 修复中）

@@ -2,7 +2,7 @@
 
 **日期**: 2026-08-17  
 **版本**: v2.4.1  
-**仓库**: https://github.com/Jackson8ok/firmware_scanner  
+**仓库**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner  
 **维护者**: 攻城狮阿信 (Jackson)  
 **邮箱**: zhu80k@163.com
 
@@ -246,9 +246,9 @@
 
 ## 🔗 相关链接
 
-- **GitHub 仓库**: https://github.com/Jackson8ok/firmware_scanner
-- **Release v2.4.1**: https://github.com/Jackson8ok/firmware_scanner/releases/tag/v2.4.1
-- **问题反馈**: https://github.com/Jackson8ok/firmware_scanner/issues
+- **GitHub 仓库**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner
+- **Release v2.4.1**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/tag/v2.4.1
+- **问题反馈**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/issues
 - **部署文档**: DEPLOYMENT.md
 - **贡献指南**: CONTRIBUTING.md
 - **变更日志**: CHANGELOG.md

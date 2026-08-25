@@ -76,7 +76,7 @@ x.y.修订版本 → Bug 修复和安全补丁
 所有安全更新都会在以下渠道发布：
 
 - 📧 GitHub Security Advisories
-- 📰 [GitHub Releases](https://github.com/Jackson8ok/firmware_scanner/releases)
+- 📰 [GitHub Releases](https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases)
 - 💬 Discord 安全频道
 - 🐦 Twitter (@玄武IO)
 
@@ -211,7 +211,7 @@ cronjob: "0 * * * * curl -s http://localhost:8000/health | grep -q OK || send_al
 ## 📞 联系方式
 
 - **安全团队邮箱**: zhu80k@163.com
-- **PGP 密钥**: [下载公钥](https://github.com/Jackson8ok/firmware_scanner/pgp-key.asc)
+- **PGP 密钥**: [下载公钥](https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/pgp-key.asc)
 - **Discord**: #security 频道
 - **应急响应**: zhu80k@163.com（仅用于紧急安全事件）
 

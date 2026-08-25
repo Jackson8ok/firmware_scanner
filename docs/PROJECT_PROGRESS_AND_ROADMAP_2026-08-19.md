@@ -345,8 +345,8 @@ OS: Linux (PAI-DSW / Ubuntu 22.04)
 
 - **项目负责人**: 攻城狮阿信 [Jackson]
 - **邮箱**: zhu80k@163.com
-- **GitHub**: https://github.com/Jackson8ok/firmware_scanner
-- **Release**: https://github.com/Jackson8ok/firmware_scanner/releases/tag/v2.4.2-hotfix
+- **GitHub**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner
+- **Release**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/tag/v2.4.2-hotfix
 - **文档**: `/mnt/workspace/firmware_scanner/docs/`
 
 ---

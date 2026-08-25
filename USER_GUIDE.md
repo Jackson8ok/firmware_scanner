@@ -291,7 +291,7 @@ MCU 固件 → 字符串提取 → 模式匹配 → 组件识别（有限）
 ## 📞 技术支持
 
 - **Email**: zhu80k@163.com
-- **GitHub Issues**: https://github.com/Jackson8ok/firmware_scanner/issues
+- **GitHub Issues**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/issues
 - **文档**: [README.md](./README.md) | [DEPLOYMENT.md](./DEPLOYMENT.md)
 
 ---

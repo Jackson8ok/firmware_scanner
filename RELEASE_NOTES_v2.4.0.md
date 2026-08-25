@@ -291,8 +291,8 @@ testPDFExport();
 ### 遇到问题？
 
 - 📖 **文档**: [官方文档](./README.md)
-- 🐛 **报告 Bug**: [GitHub Issues](https://github.com/Jackson8ok/firmware_scanner/issues)
-- 💬 **讨论**: [GitHub Discussions](https://github.com/Jackson8ok/firmware_scanner/discussions)
+- 🐛 **报告 Bug**: [GitHub Issues](https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/issues)
+- 💬 **讨论**: [GitHub Discussions](https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/discussions)
 - 📧 **邮件**: zhu80k@163.com
 
 ### 贡献代码？

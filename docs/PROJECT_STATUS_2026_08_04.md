@@ -341,13 +341,13 @@ gantt
 **项目负责人**: 攻城狮阿信[Jackson]  
 **邮箱**: zhu80k@163.com  
 **GitHub**: [@Jackson8ok](https://github.com/Jackson8ok)  
-**Discord**: https://github.com/Jackson8ok/firmware_scanner
+**Discord**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner
 
 **社区资源**:
 - 📖 [官方文档](./docs/)
-- 🐛 [Issue 追踪](https://github.com/Jackson8ok/firmware_scanner/issues)
-- 💬 [讨论区](https://github.com/Jackson8ok/firmware_scanner/discussions)
-- 📱 [Telegram 群组](https://github.com/Jackson8ok/firmware_scanner)
+- 🐛 [Issue 追踪](https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/issues)
+- 💬 [讨论区](https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/discussions)
+- 📱 [Telegram 群组](https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner)
 
 ---
 

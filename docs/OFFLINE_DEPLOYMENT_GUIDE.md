@@ -45,7 +45,7 @@
 
 ```bash
 # 选择一台可以访问外网的机器
-git clone https://github.com/Jackson8ok/firmware_scanner.git
+git clone https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner.git
 cd firmware_scanner
 ```
 
@@ -372,7 +372,7 @@ find /path/to/firmware_scanner/api/cache -type d -mtime +7 -exec rm -rf {} \;
 
 ```bash
 # 克隆项目
-git clone https://github.com/Jackson8ok/firmware_scanner.git
+git clone https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner.git
 cd firmware_scanner
 
 # 构建 Docker 镜像
@@ -487,7 +487,7 @@ echo "🔧 准备离线部署包..."
 if [ -d firmware_scanner ]; then
     cd firmware_scanner && git pull
 else
-    git clone https://github.com/Jackson8ok/firmware_scanner.git
+    git clone https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner.git
     cd firmware_scanner
 fi
 

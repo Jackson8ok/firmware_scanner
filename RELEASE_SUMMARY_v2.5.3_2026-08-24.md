@@ -15,13 +15,13 @@
 | **Tag** | v2.5.3 |
 | **名称** | v2.5.3 - published_date 日期切割修复（1 行修复） |
 | **Release ID** | 375539510 |
-| **URL** | https://github.com/Jackson8ok/firmware_scanner/releases/tag/v2.5.3 |
+| **URL** | https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/tag/v2.5.3 |
 
 ### 交付包资产
 
 | 文件名 | 大小 | 下载链接 |
 |--------|------|----------|
-| firmware_scanner-2.5.3.zip | 33.9MB | [下载](https://github.com/Jackson8ok/firmware_scanner/releases/download/v2.5.3/firmware_scanner-2.5.3.zip) |
+| firmware_scanner-2.5.3.zip | 33.9MB | [下载](https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/download/v2.5.3/firmware_scanner-2.5.3.zip) |
 
 ### Git 提交
 
@@ -120,15 +120,15 @@ $ python3 -c "import api.main"
 
 ### GitHub Release（官方）
 
-**URL**: https://github.com/Jackson8ok/firmware_scanner/releases/tag/v2.5.3
+**URL**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/tag/v2.5.3
 
-**下载链接**: https://github.com/Jackson8ok/firmware_scanner/releases/download/v2.5.3/firmware_scanner-2.5.3.zip
+**下载链接**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/download/v2.5.3/firmware_scanner-2.5.3.zip
 
 ### 部署步骤
 
 ```bash
 # 1. 下载交付包
-wget https://github.com/Jackson8ok/firmware_scanner/releases/download/v2.5.3/firmware_scanner-2.5.3.zip
+wget https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/download/v2.5.3/firmware_scanner-2.5.3.zip
 
 # 2. 解压
 unzip firmware_scanner-2.5.3.zip -d firmware_scanner
@@ -212,7 +212,7 @@ curl http://localhost:8000/api/health
 
 **维护者**: 攻城狮阿信 [Jackson]  
 **联系方式**: zhu80k@163.com  
-**GitHub**: https://github.com/Jackson8ok/firmware_scanner  
+**GitHub**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner  
 **状态**: ✅ **v2.5.3 已发布，等待客户复测（VAL-FWSCAN-2026-007）**
 
 ---

@@ -8,9 +8,9 @@
 
 ## 📦 官方下载通道
 
-**GitHub Release**: https://github.com/Jackson8ok/firmware_scanner/releases/tag/v2.5.4
+**GitHub Release**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/tag/v2.5.4
 
-**交付包下载**: https://github.com/Jackson8ok/firmware_scanner/releases/download/v2.5.4/firmware_scanner-2.5.4.zip
+**交付包下载**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/download/v2.5.4/firmware_scanner-2.5.4.zip
 
 | 项目 | 详情 |
 |------|------|
@@ -75,7 +75,7 @@
 
 ```bash
 # 1. 下载交付包
-wget https://github.com/Jackson8ok/firmware_scanner/releases/download/v2.5.4/firmware_scanner-2.5.4.zip
+wget https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/download/v2.5.4/firmware_scanner-2.5.4.zip
 
 # 2. 解压
 unzip firmware_scanner-2.5.4.zip -d firmware_scanner
@@ -111,7 +111,7 @@ curl http://localhost:8000/api/health
 
 **维护者**: 攻城狮阿信 [Jackson]  
 **邮箱**: zhu80k@163.com  
-**GitHub**: https://github.com/Jackson8ok/firmware_scanner
+**GitHub**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner
 
 ---
 

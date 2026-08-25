@@ -47,7 +47,7 @@
 
 ```
 最新提交：cbd5104
-远程仓库：https://github.com/Jackson8ok/firmware_scanner
+远程仓库：https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner
 分支：main
 ```
 
@@ -59,7 +59,7 @@
 
 **状态**: 🟢 **已自动创建成功**
 
-**Release 地址**: https://github.com/Jackson8ok/firmware_scanner/releases/tag/v2.4.2-hotfix
+**Release 地址**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/tag/v2.4.2-hotfix
 
 **发布时间**: 2026-08-19T03:26:05Z
 
@@ -119,10 +119,10 @@
 
 ## 📞 相关链接
 
-- **仓库**: https://github.com/Jackson8ok/firmware_scanner
-- **Release**: https://github.com/Jackson8ok/firmware_scanner/releases/new
-- **对比**: https://github.com/Jackson8ok/firmware_scanner/compare/v2.4.1...main
-- **Issues**: https://github.com/Jackson8ok/firmware_scanner/issues
+- **仓库**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner
+- **Release**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/new
+- **对比**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/compare/v2.4.1...main
+- **Issues**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/issues
 
 ---
 

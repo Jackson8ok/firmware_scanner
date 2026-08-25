@@ -8,7 +8,7 @@
 
 ### 1. 访问 GitHub Releases 页面
 
-打开：https://github.com/Jackson8ok/firmware_scanner/releases/new
+打开：https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/new
 
 ### 2. 填写 Release 信息
 
@@ -37,7 +37,7 @@ cat /mnt/workspace/firmware_scanner/docs/RELEASE_NOTES_v2.4.2-hotfix.md
 
 ## ✅ 验证
 
-发布后访问：https://github.com/Jackson8ok/firmware_scanner/releases/tag/v2.4.2-hotfix
+发布后访问：https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/tag/v2.4.2-hotfix
 
 应显示：
 - ✅ Tag: v2.4.2-hotfix

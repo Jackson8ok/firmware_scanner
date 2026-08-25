@@ -51,7 +51,7 @@
 git pull origin main
 
 # 如需重新克隆（获得干净历史）
-git clone https://github.com/Jackson8ok/firmware_scanner.git
+git clone https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner.git
 cd firmware_scanner
 ```
 
@@ -61,7 +61,7 @@ cd firmware_scanner
 
 ```bash
 # 克隆仓库
-git clone https://github.com/Jackson8ok/firmware_scanner.git
+git clone https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner.git
 cd firmware_scanner
 
 # 安装依赖
@@ -103,8 +103,8 @@ MIT License - 详见 [LICENSE](./LICENSE)
 
 ## 🔗 相关链接
 
-- **GitHub 仓库**: https://github.com/Jackson8ok/firmware_scanner
-- **问题反馈**: https://github.com/Jackson8ok/firmware_scanner/issues
+- **GitHub 仓库**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner
+- **问题反馈**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/issues
 - **安全报告**: zhu80k@163.com
 
 ---

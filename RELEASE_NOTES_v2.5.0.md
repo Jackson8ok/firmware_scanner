@@ -2,7 +2,7 @@
 
 **发布日期**: 2026-08-20  
 **版本号**: v2.5.0  
-**GitHub Release**: https://github.com/Jackson8ok/firmware_scanner/releases/tag/v2.5.0  
+**GitHub Release**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/tag/v2.5.0  
 **状态**: ✅ 已发布
 
 ---
@@ -187,5 +187,5 @@ curl http://localhost:8000/api/health
 
 **维护者**: 攻城狮阿信 [Jackson]  
 **联系方式**: zhu80k@163.com  
-**GitHub**: [Jackson8ok/firmware_scanner](https://github.com/Jackson8ok/firmware_scanner)  
+**GitHub**: [Jackson8ok/firmware_scanner](https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner)  
 **状态**: ✅ v2.5.0 已发布

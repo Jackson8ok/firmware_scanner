@@ -323,8 +323,8 @@ performance:
 
 遇到问题或有建议？
 
-- 🐛 [提交 Issue](https://github.com/Jackson8ok/firmware_scanner/issues)
-- 💬 [Discord 讨论](https://github.com/Jackson8ok/firmware_scanner)
+- 🐛 [提交 Issue](https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/issues)
+- 💬 [Discord 讨论](https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner)
 - 📧 Email: zhu80k@163.com
 
 ---

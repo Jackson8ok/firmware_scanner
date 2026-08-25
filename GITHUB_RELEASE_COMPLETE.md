@@ -1,7 +1,7 @@
 # AFVS GitHub 仓库更新完成报告
 
 **日期**: 2026-08-25  
-**仓库**: https://github.com/Jackson8ok/firmware_scanner  
+**仓库**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner  
 **状态**: ✅ 代码已推送，待网页更新
 
 ---
@@ -33,7 +33,7 @@ v2.5.4 标签已存在（需要手动创建 Release）
 
 ### 步骤 1: 更新仓库 About 区域
 
-**访问**: https://github.com/Jackson8ok/firmware_scanner
+**访问**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner
 
 **操作**:
 1. 点击右侧 "About" 区域的 ⚙️ 设置图标
@@ -56,7 +56,7 @@ v2.5.4 标签已存在（需要手动创建 Release）
 
 ### 步骤 2: 创建 v2.5.4 Release
 
-**访问**: https://github.com/Jackson8ok/firmware_scanner/releases/new
+**访问**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/new
 
 **操作**:
 1. **Tag version**: 选择 `v2.5.4` (已存在)
@@ -111,7 +111,7 @@ v2.5.4 标签已存在（需要手动创建 Release）
 
 ```bash
 # 下载交付包
-wget https://github.com/Jackson8ok/firmware_scanner/releases/download/v2.5.4/firmware_scanner-2.5.4.zip
+wget https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/download/v2.5.4/firmware_scanner-2.5.4.zip
 
 # 解压并启动
 unzip firmware_scanner-2.5.4.zip
@@ -142,13 +142,13 @@ open http://localhost:8765
 - **中文名**: 玄武·车固扫描器
 - **验收编号**: VAL-AFVS-2026-XXX
 
-详见：[AFVS_BRAND_UPGRADE_2026-08-25.md](https://github.com/Jackson8ok/firmware_scanner/blob/main/AFVS_BRAND_UPGRADE_2026-08-25.md)
+详见：[AFVS_BRAND_UPGRADE_2026-08-25.md](https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/blob/main/AFVS_BRAND_UPGRADE_2026-08-25.md)
 
 ### 📧 联系方式
 
 - **维护者**: 攻城狮阿信 [Jackson]
 - **邮箱**: zhu80k@163.com
-- **仓库**: https://github.com/Jackson8ok/firmware_scanner
+- **仓库**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner
 
 ---
 
@@ -161,10 +161,10 @@ open http://localhost:8765
 
 | 链接 | 说明 |
 |------|------|
-| https://github.com/Jackson8ok/firmware_scanner | 仓库首页 |
-| https://github.com/Jackson8ok/firmware_scanner/releases | Releases 页面 |
-| https://github.com/Jackson8ok/firmware_scanner/blob/main/GITHUB_UPDATE_GUIDE.md | 更新指南 |
-| https://github.com/Jackson8ok/firmware_scanner/blob/main/AFVS_BRAND_UPGRADE_2026-08-25.md | 品牌升级报告 |
+| https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner | 仓库首页 |
+| https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases | Releases 页面 |
+| https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/blob/main/GITHUB_UPDATE_GUIDE.md | 更新指南 |
+| https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/blob/main/AFVS_BRAND_UPGRADE_2026-08-25.md | 品牌升级报告 |
 
 ---
 

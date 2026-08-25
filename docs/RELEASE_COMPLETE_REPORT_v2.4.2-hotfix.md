@@ -2,7 +2,7 @@
 
 **发布日期**: 2026-08-19  
 **状态**: 🟢 **全部完成**  
-**Release**: https://github.com/Jackson8ok/firmware_scanner/releases/tag/v2.4.2-hotfix
+**Release**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/tag/v2.4.2-hotfix
 
 ---
 
@@ -164,10 +164,10 @@ source scripts/init_ssh.sh
 
 ## 📞 相关链接
 
-- **Release**: https://github.com/Jackson8ok/firmware_scanner/releases/tag/v2.4.2-hotfix
-- **仓库**: https://github.com/Jackson8ok/firmware_scanner
-- **对比**: https://github.com/Jackson8ok/firmware_scanner/compare/v2.4.1...v2.4.2-hotfix
-- **Issues**: https://github.com/Jackson8ok/firmware_scanner/issues
+- **Release**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/tag/v2.4.2-hotfix
+- **仓库**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner
+- **对比**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/compare/v2.4.1...v2.4.2-hotfix
+- **Issues**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/issues
 
 ---
 

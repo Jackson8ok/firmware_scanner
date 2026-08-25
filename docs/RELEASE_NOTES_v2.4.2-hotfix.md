@@ -3,7 +3,7 @@
 **发布日期**: 2026-08-18  
 **版本**: v2.4.2-hotfix  
 **提交**: `ad3adda` + `5435b5b` + `2a48961`  
-**对比**: [v2.4.1...v2.4.2-hotfix](https://github.com/Jackson8ok/firmware_scanner/compare/v2.4.1...v2.4.2-hotfix)
+**对比**: [v2.4.1...v2.4.2-hotfix](https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/compare/v2.4.1...v2.4.2-hotfix)
 
 ---
 
@@ -227,7 +227,7 @@ curl http://localhost:8000/api/task/{task_id}/result
 
 ## 📞 反馈与支持
 
-- **GitHub Issues**: https://github.com/Jackson8ok/firmware_scanner/issues
+- **GitHub Issues**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/issues
 - **邮箱**: zhu80k@163.com
 - **文档**: `/mnt/workspace/firmware_scanner/docs/`
 

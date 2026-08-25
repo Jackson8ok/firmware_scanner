@@ -38,7 +38,7 @@ git push origin main
 ```bash
 cd /mnt/workspace/firmware_scanner
 TOKEN=$(cat /mnt/workspace/.github_token)
-git push https://$TOKEN@github.com/Jackson8ok/firmware_scanner.git main
+git push https://$TOKEN@github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner.git main
 ```
 
 ### 方式三：GitHub Desktop

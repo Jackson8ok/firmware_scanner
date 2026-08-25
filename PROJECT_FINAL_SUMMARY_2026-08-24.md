@@ -171,8 +171,8 @@
 
 | 项目 | 位置 | 状态 |
 |------|------|:----:|
-| 源代码 | https://github.com/Jackson8ok/firmware_scanner | ✅ main |
-| Release v2.5.2 | https://github.com/Jackson8ok/firmware_scanner/releases/tag/v2.5.2 | ✅ 已发布 |
+| 源代码 | https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner | ✅ main |
+| Release v2.5.2 | https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/tag/v2.5.2 | ✅ 已发布 |
 | 部署脚本 | `/mnt/workspace/firmware_scanner/scripts/` | ✅ 完整 |
 | 数据库 | `/mnt/workspace/firmware_scanner/db/grype/6/` | ✅ 926,657 CVE |
 
@@ -227,8 +227,8 @@
 |------|------|
 | 项目负责人 | 攻城狮阿信 [Jackson] |
 | 邮箱 | zhu80k@163.com |
-| GitHub | https://github.com/Jackson8ok/firmware_scanner |
-| Release | https://github.com/Jackson8ok/firmware_scanner/releases/tag/v2.5.2 |
+| GitHub | https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner |
+| Release | https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/tag/v2.5.2 |
 | 文档 | `/mnt/workspace/firmware_scanner/docs/` |
 
 ---

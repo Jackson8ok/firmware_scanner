@@ -95,7 +95,7 @@ if "+" in date_str:
 
 **维护者**: 攻城狮阿信 [Jackson]  
 **邮箱**: zhu80k@163.com  
-**GitHub**: https://github.com/Jackson8ok/firmware_scanner/releases/tag/v2.5.3
+**GitHub**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/tag/v2.5.3
 
 ---
 

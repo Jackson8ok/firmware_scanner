@@ -1,7 +1,7 @@
 # GitHub 仓库更新指南
 
 **日期**: 2026-08-25  
-**仓库**: https://github.com/Jackson8ok/firmware_scanner
+**仓库**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner
 
 ---
 
@@ -83,7 +83,7 @@ supply-chain-security
 
 ```bash
 # 下载交付包
-wget https://github.com/Jackson8ok/firmware_scanner/releases/download/v2.5.4/firmware_scanner-2.5.4.zip
+wget https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/download/v2.5.4/firmware_scanner-2.5.4.zip
 
 # 解压并启动
 unzip firmware_scanner-2.5.4.zip
@@ -114,13 +114,13 @@ open http://localhost:8765
 - **中文名**: 玄武·车固扫描器
 - **验收编号**: VAL-AFVS-2026-XXX
 
-详见：[AFVS_BRAND_UPGRADE_2026-08-25.md](https://github.com/Jackson8ok/firmware_scanner/blob/main/AFVS_BRAND_UPGRADE_2026-08-25.md)
+详见：[AFVS_BRAND_UPGRADE_2026-08-25.md](https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/blob/main/AFVS_BRAND_UPGRADE_2026-08-25.md)
 
 ### 📧 联系方式
 
 - **维护者**: 攻城狮阿信 [Jackson]
 - **邮箱**: zhu80k@163.com
-- **仓库**: https://github.com/Jackson8ok/firmware_scanner
+- **仓库**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner
 
 ---
 
@@ -137,7 +137,7 @@ open http://localhost:8765
 
 **建议添加**:
 ```
-https://github.com/Jackson8ok/firmware_scanner/releases/tag/v2.5.4
+https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/tag/v2.5.4
 ```
 
 或直接使用官方文档链接（如有）。
