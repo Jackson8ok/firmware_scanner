@@ -2,8 +2,11 @@
 
 **版本**: v2.6.0  
 **发布日期**: 2026-08-26  
-**代码提交**: (待推送)  
+**代码提交**: `e723345` (main 分支)  
+**Git Tag**: `v2.6.0`  
+**GitHub Release**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/tag/v2.6.0  
 **兼容性**: 向下兼容 v2.5.x  
+**发布状态**: ✅ 已发布
 
 > 🐢 玄武·AFVS (Auto Firmware Vulnerability Scanner) — 汽车固件安全扫描平台 v2.6.0 正式发布！  
 > 该版本带来全面升级：并发扫描、报告模板、邮件通知，以及前端版本号自动同步！

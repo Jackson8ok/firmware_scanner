@@ -3,7 +3,9 @@
 **日期**: 2026-08-26  
 **版本**: v2.6.0  
 **状态**: Phase 3 完成，Phase 4 准备启动  
-**总进度**: 100% (6/6 Phase 完成)
+**总进度**: 100% (6/6 Phase 完成)  
+**发布状态**: ✅ 已发布到 GitHub (commit `e723345`, tag `v2.6.0`)  
+**GitHub Release**: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner/releases/tag/v2.6.0
 
 ---
 
