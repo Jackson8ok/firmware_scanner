@@ -110,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initDOMElements(); // 初始化 DOM 元素
     initEventListeners();
     initSocketIOListeners(); // 初始化 Socket.IO 监听器
+    injectVersion(); // 从后端自动注入版本号（Phase 6）
     refreshQueueStats();
     loadScanHistory(); // 加载扫描历史
     
@@ -144,6 +145,33 @@ function initEventListeners() {
     // 批量文件选择监听
     if (batchFileInput) {
         batchFileInput.addEventListener('change', handleBatchFileSelect);
+    }
+}
+
+// ============================================================
+// Phase 6: 版本号自动注入
+// ============================================================
+/**
+ * 从后端 /api/health 获取版本号并注入到页面，避免版本号硬编码滞后
+ */
+async function injectVersion() {
+    try {
+        const resp = await fetch('/api/health', { cache: 'no-store' });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        const version = data.version || 'v2.6.0';
+        const appVersionEl = document.getElementById('app-version');
+        const footerVersionEl = document.getElementById('footer-version');
+        const titleEl = document.querySelector('title');
+        if (appVersionEl) appVersionEl.textContent = version;
+        if (footerVersionEl) footerVersionEl.textContent = version;
+        if (titleEl && !titleEl.textContent.includes(version)) {
+            titleEl.textContent = `🐢 玄武·AFVS - 汽车固件漏洞扫描器 ${version}`;
+        }
+        console.log(`✅ 版本号已注入: ${version}`);
+    } catch (err) {
+        console.warn('⚠️ 版本号注入失败，使用默认值:', err);
+        // 失败时保留 HTML 中的默认值（v2.6.0）
     }
 }
 

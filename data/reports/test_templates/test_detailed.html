@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>玄武·AFVS 详细报告</title>
+    <style>
+        :root {
+            --primary: #1a237e;
+            --secondary: #3949ab;
+            --critical: #d32f2f;
+            --high: #f57c00;
+            --medium: #fbc02d;
+            --low: #388e3c;
+        }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            line-height: 1.8;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 50px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1, h2, h3 {
+            color: var(--primary);
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        h2 {
+            border-bottom: 3px solid var(--secondary);
+            padding-bottom: 15px;
+            margin-top: 40px;
+        }
+        
+        .executive-summary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .executive-summary h2 {
+            color: white;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            border-left: 5px solid var(--secondary);
+        }
+        
+        .stat-card.critical { border-left-color: var(--critical); }
+        .stat-card.high { border-left-color: var(--high); }
+        .stat-card.medium { border-left-color: var(--medium); }
+        .stat-card.low { border-left-color: var(--low); }
+        
+        .stat-value {
+            font-size: 3em;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 1.1em;
+            margin-top: 10px;
+        }
+        
+        .chart-container {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            margin: 30px 0;
+            text-align: center;
+        }
+        
+        .vulnerability-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+        }
+        
+        .vulnerability-table th {
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+        
+        .vulnerability-table td {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .vulnerability-table tr:hover {
+            background: #f5f5f5;
+        }
+        
+        .severity-badge {
+            padding: 5px 12px;
+            border-radius: 15px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+        
+        .severity-badge.critical { background: var(--critical); }
+        .severity-badge.high { background: var(--high); }
+        .severity-badge.medium { background: var(--medium); }
+        .severity-badge.low { background: var(--low); }
+        
+        .recommendations {
+            background: #fff3e0;
+            border: 2px solid #ffb74d;
+            padding: 30px;
+            border-radius: 10px;
+            margin: 30px 0;
+        }
+        
+        .recommendations h3 {
+            color: #e65100;
+            margin-bottom: 20px;
+        }
+        
+        .recommendation-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: white;
+            border-radius: 5px;
+            border-left: 4px solid #ffb74d;
+        }
+        
+        .component-list {
+            background: #e8f5e9;
+            padding: 30px;
+            border-radius: 10px;
+            margin: 30px 0;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid var(--primary);
+            text-align: center;
+            color: #666;
+        }
+        
+        @media print {
+            body { background: white; }
+            .container { box-shadow: none; padding: 30px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐢 玄武·AFVS 详细审计报告</h1>
+        
+        <!-- 执行摘要 -->
+        <div class="executive-summary">
+            <h2>执行摘要</h2>
+            <p><strong>固件名称:</strong> OpenWrt_21.02.5_bcm27xx_bcm2711_ext4-factory.img.gz</p>
+            <p><strong>扫描日期:</strong> 2026-08-26 15:30:00</p>
+            <p><strong>扫描耗时:</strong> 45.8 秒</p>
+            <p><strong>风险评分:</strong> 100/100</p>
+            <p><strong>总体评估:</strong> 
+                    🔴 严重风险 - 需立即采取行动
+            </p>
+        </div>
+        
+        <!-- 统计概览 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">156</div>
+                <div class="stat-label">识别组件</div>
+            </div>
+            <div class="stat-card critical">
+                <div class="stat-value">3</div>
+                <div class="stat-label">严重漏洞</div>
+            </div>
+            <div class="stat-card high">
+                <div class="stat-value">8</div>
+                <div class="stat-label">高危漏洞</div>
+            </div>
+            <div class="stat-card medium">
+                <div class="stat-value">15</div>
+                <div class="stat-label">中危漏洞</div>
+            </div>
+            <div class="stat-card low">
+                <div class="stat-value">21</div>
+                <div class="stat-label">低危漏洞</div>
+            </div>
+        </div>
+        
+        <!-- 漏洞分布图表 -->
+        <div class="chart-container">
+            <h3>漏洞严重程度分布</h3>
+            <div style="margin: 30px 0;">
+                <svg viewBox="0 0 400 200" style="max-width: 600px; width: 100%;">
+                        
+                        <rect x="10" y="50" width="22.799999999999997" height="80" fill="#d32f2f"/>
+                        <rect x="32.8" y="50" width="64.6" height="80" fill="#f57c00"/>
+                        <rect x="97.39999999999999" y="50" width="121.6" height="80" fill="#fbc02d"/>
+                        <rect x="219.0" y="50" width="171.0" height="80" fill="#388e3c"/>
+                        
+                        <text x="200" y="180" text-anchor="middle" fill="#333">
+                            严重 6.0% | 高危 17.0% | 中危 32.0% | 低危 45.0%
+                        </text>
+                </svg>
+            </div>
+        </div>
+        
+        <!-- 完整漏洞列表 -->
+        <h2>📋 完整漏洞清单</h2>
+        <table class="vulnerability-table">
+            <thead>
+                <tr>
+                    <th>CVE 编号</th>
+                    <th>严重程度</th>
+                    <th>组件</th>
+                    <th>CVSS</th>
+                    <th>EPSS</th>
+                    <th>描述</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>CVE-2026-1234</strong></td>
+                    <td>
+                        <span class="severity-badge critical">
+                            Critical
+                        </span>
+                    </td>
+                    <td>openssl 1.1.1k</td>
+                    <td>9.8</td>
+                    <td>85.0%</td>
+                    <td style="max-width: 400px;">OpenSSL 中存在严重缓冲区溢出漏洞，允许远程攻击者执行任意代码...</td>
+                </tr>
+                <tr>
+                    <td><strong>CVE-2026-5678</strong></td>
+                    <td>
+                        <span class="severity-badge high">
+                            High
+                        </span>
+                    </td>
+                    <td>curl 7.79.0</td>
+                    <td>7.5</td>
+                    <td>45.0%</td>
+                    <td style="max-width: 400px;">Curl 中存在信息泄露漏洞，可能导致敏感数据暴露...</td>
+                </tr>
+                <tr>
+                    <td><strong>CVE-2026-9012</strong></td>
+                    <td>
+                        <span class="severity-badge medium">
+                            Medium
+                        </span>
+                    </td>
+                    <td>zlib 1.2.11</td>
+                    <td>5.3</td>
+                    <td>25.0%</td>
+                    <td style="max-width: 400px;">Zlib 中存在拒绝服务漏洞，可能导致应用程序崩溃...</td>
+                </tr>
+                <tr>
+                    <td><strong>CVE-2026-3456</strong></td>
+                    <td>
+                        <span class="severity-badge low">
+                            Low
+                        </span>
+                    </td>
+                    <td>busybox 1.35.0</td>
+                    <td>3.1</td>
+                    <td>8.0%</td>
+                    <td style="max-width: 400px;">BusyBox 中存在轻微的信息泄露问题...</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <!-- 组件列表 -->
+        <div class="component-list">
+            <h3>📦 识别的组件</h3>
+            <p>共识别 <strong>156</strong> 个组件</p>
+            <!-- 可在此处添加组件表格 -->
+        </div>
+        
+        <!-- 修复建议 -->
+        <div class="recommendations">
+            <h3>💡 修复建议</h3>
+            <div class="recommendation-item">
+                🔴 立即修复 {scan_result.critical_count} 个严重漏洞
+            </div>
+            <div class="recommendation-item">
+                🟠 优先修复 {scan_result.high_count} 个高危漏洞
+            </div>
+            <div class="recommendation-item">
+                ⚠️ 平均 CVSS 评分较高 ({scan_result.cvss_avg})，建议全面审查
+            </div>
+            
+            <h4 style="margin-top: 30px;">通用建议:</h4>
+            <div class="recommendation-item">
+                <strong>1. 优先级排序:</strong> 首先修复严重和高危漏洞，特别是 CVSS > 9.0 的漏洞
+            </div>
+            <div class="recommendation-item">
+                <strong>2. 版本升级:</strong> 将受影响组件升级到已修复的安全版本
+            </div>
+            <div class="recommendation-item">
+                <strong>3. 持续监控:</strong> 定期扫描新发现的漏洞，建立安全更新流程
+            </div>
+            <div class="recommendation-item">
+                <strong>4. 供应链安全:</strong> 评估第三方组件来源，优先选择维护活跃的项目
+            </div>
+        </div>
+        
+        <!-- 页脚 -->
+        <div class="footer">
+            <p><strong>报告生成时间:</strong> 2026-08-26 16:31:11</p>
+            <p><strong>玄武·AFVS 版本:</strong> vv2.6.0</p>
+            <p><strong>项目地址:</strong> https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner</p>
+            <p><strong>联系方式:</strong> 攻城狮阿信 [Jackson] | zhu80k@163.com</p>
+        </div>
+    </div>
+</body>
+</html>
