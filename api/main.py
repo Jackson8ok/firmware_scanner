@@ -37,6 +37,12 @@ from api.error_handler import (
     app_exception_handler, http_exception_handler, generic_exception_handler,
     AppException, ErrorCode, ErrorResponse
 )
+
+# 新增 API 模块注册（v2.6.0）
+from api.notify.notify_api import register_notify_api
+from api.reports.template_api import register_reports_api
+from api.scan.batch_api import register_batch_api
+
 import yaml
 
 # ============================================================
@@ -175,6 +181,14 @@ for dir_path in [config['paths']['uploads'],
                  config['paths']['workspace'],
                  config['paths']['reports']]:
     Path(dir_path).mkdir(parents=True, exist_ok=True)
+
+# ============================================================
+# 注册新增 API 模块（v2.6.0）
+# ============================================================
+register_notify_api(_base_app)
+register_reports_api(_base_app)
+register_batch_api(_base_app)
+logger.info("✅ v2.6.0 新增 API 模块已注册（notify + reports + batch）")
 
 # ============================================================
 # 获取扫描队列（注册 WebSocket 回调）
@@ -582,14 +596,14 @@ async def delete_task(task_id: str):
 # ============================================================
 
 @_base_app.post("/api/scan/batch")
-async def batch_scan(firmware_list: List[str]):
+async def batch_scan(firmware_list: List[str], firmware_type: str = Form(default="auto")):
     """批量启动扫描"""
     try:
         queue = get_queue()
         task_ids = []
         for firmware_id in firmware_list:
             if hasattr(queue, "add_task"):
-                task = queue.add_task(firmware_id)
+                task = queue.add_task(firmware_id, firmware_type=firmware_type)
                 task_ids.append(task.task_id)
         return {"task_ids": task_ids, "count": len(task_ids)}
     except Exception as e:
