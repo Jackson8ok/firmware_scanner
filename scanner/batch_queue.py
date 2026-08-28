@@ -257,7 +257,10 @@ class BatchScanQueue(ScanQueue):
         }
         
         for task_id in batch_task.task_ids:
-            result = self.get_result(task_id)
+            # 修复：使用 get_task_status 获取任务对象，然后访问 result 属性
+            task = self.get_task_status(task_id)
+            result = task.result if task and task.result else None
+            
             if result:
                 results.append(result)
                 
