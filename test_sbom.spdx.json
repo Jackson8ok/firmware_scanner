@@ -1,0 +1,69 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "Test Firmware SBOM",
+  "documentNamespace": "https://example.org/test-firmware",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-Package-FreeRTOS",
+      "name": "FreeRTOS",
+      "versionInfo": "10.4.3",
+      "supplier": "Amazon Web Services",
+      "downloadLocation": "https://github.com/FreeRTOS/FreeRTOS",
+      "licenseConcluded": "MIT",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceType": "cpe23Type",
+          "referenceLocator": "cpe:2.3:a:freertos:freertos:10.4.3:*:*:*:*:*:*:*"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-lwIP",
+      "name": "lwIP",
+      "versionInfo": "2.1.3",
+      "supplier": "Adam Dunkels",
+      "downloadLocation": "https://github.com/lwip-tcpip/lwip",
+      "licenseConcluded": "BSD-3-Clause",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceType": "cpe23Type",
+          "referenceLocator": "cpe:2.3:a:lwip:lwip:2.1.3:*:*:*:*:*:*:*"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-wolfSSL",
+      "name": "wolfSSL",
+      "versionInfo": "5.8.4",
+      "supplier": "wolfSSL Inc.",
+      "downloadLocation": "https://github.com/wolfSSL/wolfssl",
+      "licenseConcluded": "GPL-2.0-or-later",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceType": "cpe23Type",
+          "referenceLocator": "cpe:2.3:a:wolfssl:wolfssl:5.8.4:*:*:*:*:*:*:*"
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-BusyBox",
+      "name": "BusyBox",
+      "versionInfo": "1.35.0",
+      "supplier": "BusyBox",
+      "downloadLocation": "https://busybox.net/downloads/busybox-1.35.0.tar.bz2",
+      "licenseConcluded": "GPL-2.0-only",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceType": "cpe23Type",
+          "referenceLocator": "cpe:2.3:a:busybox:busybox:1.35.0:*:*:*:*:*:*:*"
+        }
+      ]
+    }
+  ]
+}

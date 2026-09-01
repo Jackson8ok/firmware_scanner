@@ -43,6 +43,9 @@ from api.notify.notify_api import register_notify_api
 from api.reports.template_api import register_reports_api
 from api.scan.batch_api import register_batch_api
 
+# 新增 API 模块注册（v2.7.0-Phase2）
+from services.sbom.sbom_api import register_sbom_api
+
 import yaml
 
 # ============================================================
@@ -189,6 +192,12 @@ register_notify_api(_base_app)
 register_reports_api(_base_app)
 register_batch_api(_base_app)
 logger.info("✅ v2.6.0 新增 API 模块已注册（notify + reports + batch）")
+
+# ============================================================
+# 注册新增 API 模块（v2.7.0-Phase2）
+# ============================================================
+register_sbom_api(_base_app)
+logger.info("✅ v2.7.0-Phase2 SBOM API 已注册")
 
 # ============================================================
 # 获取扫描队列（注册 WebSocket 回调）
