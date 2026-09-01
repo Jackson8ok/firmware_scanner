@@ -24,6 +24,14 @@ logger = logging.getLogger(__name__)
 # 导入 EPSS 缓存
 from .epss_cache import EPSSCacheManager
 
+# Phase 4: 导入 SBOM 融合类型
+try:
+    from services.sbom.sbom_fusion import FusedComponent
+    FUSION_AVAILABLE = True
+except ImportError:
+    FusedComponent = None
+    FUSION_AVAILABLE = False
+
 # 全局 EPSS 管理器（单例模式）
 _epss_manager: Optional[EPSSCacheManager] = None
 _epss_download_failed: bool = False  # 防止重复下载
@@ -602,6 +610,42 @@ class SBOMGenerator:
         logger.info(f"合并结果：Syft={len(syft_components)} + 自研={len(custom_components)} → 总计={len(merged)}（新增 {added_count} 个）")
         return merged
     
+    def generate_sbom_fusion(self, firmware_path: str, sbom_components: List[Dict], firmware_type: str = 'auto') -> List[FusedComponent]:
+        """
+        Phase 4: SBOM 融合架构
+        
+        融合 SBOM 声明组件与二进制指纹组件，生成证据强度分级的融合结果
+        
+        Args:
+            firmware_path: 固件文件路径
+            sbom_components: SBOM 组件列表（字典格式）
+            firmware_type: 固件类型
+        
+        Returns:
+            融合后的组件列表（FusedComponent）
+        """
+        logger.info(f"Phase 4 SBOM 融合：{len(sbom_components)} SBOM 组件")
+        
+        # 1. 生成指纹组件
+        fingerprint_components = self.generate_sbom_merged(firmware_path, firmware_type)
+        fp_dicts = [comp.to_dict() for comp in fingerprint_components]
+        
+        logger.info(f"指纹识别：{len(fp_dicts)} 个组件")
+        
+        # 2. 融合
+        from services.sbom.sbom_fusion import SBOMFusionEngine
+        engine = SBOMFusionEngine()
+        fused = engine.fuse(sbom_components, fp_dicts)
+        
+        # 3. 输出摘要
+        summary = engine.get_fusion_summary()
+        logger.info(f"融合结果：A 类={summary['evidence_levels']['A']}, B 类={summary['evidence_levels']['B']}, C 类={summary['evidence_levels']['C']}")
+        
+        for warning in engine.warnings:
+            logger.warning(f"⚠️  [{warning['type']}] {warning['message']}")
+        
+        return fused
+    
     def _detect_firmware_type(self, firmware_path: str) -> str:
         """使用 file 命令检测固件类型，支持 OpenWrt 等嵌套 SquashFS 固件"""
         try:
@@ -1114,7 +1158,14 @@ class CVEMatcher:
                 logger.info(f"正在查询组件 {i+1}/{len(components)}: {comp.name}")
             
             comp_vulns = self._query_component(comp)
+            
+            # Phase 4: 如果是融合组件，添加证据级别信息
             for vuln in comp_vulns:
+                if hasattr(comp, 'evidence_level'):
+                    vuln.component_evidence_level = comp.evidence_level
+                else:
+                    vuln.component_evidence_level = "A"  # 默认 A 类
+                
                 # DEF-NEW-04: 按 (cve_id, component_name, version) 去重
                 key = (vuln.cve_id, vuln.component_name, vuln.component_version)
                 if key not in seen:
@@ -1125,6 +1176,59 @@ class CVEMatcher:
         
         logger.info(f"CVE 查询完成，发现 {len(vulnerabilities)} 个漏洞（去重后）")
         return vulnerabilities
+    
+    def calculate_weighted_statistics(self, vulnerabilities: List[Vulnerability]) -> Dict:
+        """
+        Phase 4: 计算加权 CVE 统计
+        
+        Args:
+            vulnerabilities: 漏洞列表（包含 component_evidence_level 字段）
+        
+        Returns:
+            加权统计结果
+        """
+        total_raw = len(vulnerabilities)
+        total_weighted = 0.0
+        
+        by_severity = {
+            "Critical": {"raw": 0, "weighted": 0.0},
+            "High": {"raw": 0, "weighted": 0.0},
+            "Medium": {"raw": 0, "weighted": 0.0},
+            "Low": {"raw": 0, "weighted": 0.0}
+        }
+        
+        for vuln in vulnerabilities:
+            evidence_level = getattr(vuln, 'component_evidence_level', 'C')
+            weight = {"A": 1.0, "B": 0.5, "C": 0.25}.get(evidence_level, 0.25)
+            severity = vuln.severity or "Low"
+            
+            # 标准化 severity
+            if severity.lower() == "critical":
+                severity = "Critical"
+            elif severity.lower() == "high":
+                severity = "High"
+            elif severity.lower() == "medium":
+                severity = "Medium"
+            else:
+                severity = "Low"
+            
+            total_weighted += weight
+            by_severity[severity]["raw"] += 1
+            by_severity[severity]["weighted"] += weight
+        
+        return {
+            "total": {
+                "raw": total_raw,
+                "weighted": round(total_weighted, 2)
+            },
+            "by_severity": {
+                sev: {
+                    "raw": data["raw"],
+                    "weighted": round(data["weighted"], 2)
+                }
+                for sev, data in by_severity.items()
+            }
+        }
     
     def _query_component(self, component: Component) -> List[Vulnerability]:
         """查询单个组件的漏洞（适配 Grype v6 schema）"""
