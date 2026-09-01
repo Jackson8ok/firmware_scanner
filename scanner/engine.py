@@ -58,12 +58,15 @@ def get_epss_manager(cache_dir: str = "./cache/epss") -> EPSSCacheManager:
 
 @dataclass
 class Component:
-    """软件组件信息"""
+    """软件组件信息（v2.7.0-Phase3 增强版）"""
     name: str
     version: str
     type: str  # 'library', 'os', 'language'
     path: str
     cpe: Optional[str] = None
+    confidence: str = "high"  # 置信度：high / medium / low
+    version_note: Optional[str] = None  # 版本说明（如「版本未知，需厂商提供」）
+    evidence: Optional[List[str]] = None  # 识别证据列表
     
     def to_dict(self):
         return {
@@ -71,7 +74,10 @@ class Component:
             'version': self.version,
             'type': self.type,
             'path': self.path,
-            'cpe': self.cpe
+            'cpe': self.cpe,
+            'confidence': self.confidence,
+            'version_note': self.version_note,
+            'evidence': self.evidence or []
         }
 
 
@@ -713,14 +719,32 @@ class SBOMGenerator:
                 version = self._extract_version(strings_output, name)
                 match_count = len(matches)
                 
+                # Phase 3: 置信度和版本说明
+                if version:
+                    confidence = "high"
+                    version_note = None
+                elif name in ['FreeRTOS', 'lwIP']:
+                    # 版本未知但可识别组件
+                    confidence = "medium"
+                    version_note = "版本未知（需厂商提供）"
+                else:
+                    confidence = "low"
+                    version_note = "版本未知"
+                
+                # 收集证据（前 3 个匹配）
+                evidence = list(set(matches))[:3]
+                
                 detected[name] = Component(
                     name=name,
                     version=version or 'unknown',
                     type=comp_type,
-                    path=firmware_path
+                    path=firmware_path,
+                    confidence=confidence,
+                    version_note=version_note,
+                    evidence=evidence
                 )
                 
-                logger.debug(f"✓ 识别 {name}: {match_count} 次匹配，版本={version}")
+                logger.debug(f"✓ 识别 {name}: {match_count} 次匹配，版本={version or 'unknown'} [{confidence}]")
         
         logger.info(f"识别到 {len(detected)} 个 MCU 组件：{', '.join(detected.keys())}")
         return list(detected.values())
@@ -1185,8 +1209,9 @@ class CVEMatcher:
                     if not version_matched:
                         version_status = "not_matched"
                 else:
-                    # 版本未知时，保守策略：报告但标记为 unknown
+                    # Phase 3: 版本未知时，保守策略：报告全部 CVE 但标记为 unknown
                     version_status = "unknown"
+                    logger.debug(f"⚠️  {component.name} 版本未知，将报告全部 CVE（需厂商确认）")
                 
                 # 如果不匹配版本约束，跳过
                 if not version_matched:

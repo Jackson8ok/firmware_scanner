@@ -263,11 +263,11 @@ def compare_sbom_with_fingerprint(
     fingerprint_components: List[Dict]
 ) -> Dict:
     """
-    比较 SBOM 声明组件与指纹识别组件
+    比较 SBOM 声明组件与指纹识别组件（v2.7.0-Phase3 增强版）
     
     Args:
         sbom_components: SBOM 解析的组件列表
-        fingerprint_components: 指纹识别的组件列表（字典格式）
+        fingerprint_components: 指纹识别的组件列表（字典格式，含 confidence/version_note）
     
     Returns:
         比对结果字典
@@ -301,6 +301,8 @@ def compare_sbom_with_fingerprint(
             # 版本比较
             sbom_version = sbom_comp.version
             fp_version = fp_comp.get('version', 'unknown')
+            fp_confidence = fp_comp.get('confidence', 'high')
+            fp_version_note = fp_comp.get('version_note')
             
             if sbom_version == fp_version:
                 status = "confirmed"
@@ -313,6 +315,8 @@ def compare_sbom_with_fingerprint(
                 "name": sbom_comp.name,
                 "sbom_version": sbom_version,
                 "fingerprint_version": fp_version,
+                "confidence": fp_confidence,
+                "version_note": fp_version_note,
                 "status": status,
                 "evidence": fp_comp.get('evidence', [])
             })
@@ -331,6 +335,8 @@ def compare_sbom_with_fingerprint(
             fingerprint_only.append({
                 "name": fp_comp.get('name'),
                 "version": fp_comp.get('version', 'unknown'),
+                "confidence": fp_comp.get('confidence', 'high'),
+                "version_note": fp_comp.get('version_note'),
                 "warning": "SBOM 未声明，可能遗漏",
                 "evidence": fp_comp.get('evidence', [])
             })
@@ -366,6 +372,22 @@ def compare_sbom_with_fingerprint(
             "message": f"{len(version_mismatches)} 个组件版本不一致"
         })
     
+    # Phase 3: 版本未知组件统计
+    unknown_version_components = [
+        m for m in matched 
+        if m.get("confidence") == "medium" or m.get("confidence") == "low"
+    ]
+    if unknown_version_components:
+        warnings.append({
+            "type": "version_unknown",
+            "count": len(unknown_version_components),
+            "components": [
+                {"name": c["name"], "version_note": c.get("version_note")}
+                for c in unknown_version_components
+            ],
+            "message": f"{len(unknown_version_components)} 个组件版本未知（需厂商提供）"
+        })
+    
     return {
         "matched": matched,
         "sbom_only": sbom_only,
@@ -376,6 +398,7 @@ def compare_sbom_with_fingerprint(
             "total_fingerprint": len(fingerprint_components),
             "matched_count": len(matched),
             "sbom_only_count": len(sbom_only),
-            "fingerprint_only_count": len(fingerprint_only)
+            "fingerprint_only_count": len(fingerprint_only),
+            "unknown_version_count": len(unknown_version_components)
         }
     }
