@@ -691,18 +691,19 @@ class SBOMGenerator:
         # 提取可打印字符串
         strings_output = self._extract_strings(firmware_path)
         
-        # 增强的模式匹配库
+        # 增强的模式匹配库（v2.7.0 - 大小写不敏感修复）
+        # 使用 (?i) 标志实现大小写不敏感匹配，解决固件中大写标识漏检问题
         patterns = {
-            'FreeRTOS': (re.compile(r'FreeRTOS|xTaskCreate|pvPortMalloc|xSemaphoreCreate'), 'rtos'),
-            'lwIP': (re.compile(r'lwIP|tcp_connect|udp_sendto|netif_add|pbuf_alloc'), 'network'),
-            'wolfSSL': (re.compile(r'wolfSSL_|WOLFSSL_|SSL_set_fd|wolfSSL_Init'), 'crypto'),
-            'mbedTLS': (re.compile(r'mbedtls_|MBEDTLS_|mbedtls_ssl_init'), 'crypto'),
-            'OpenSSL': (re.compile(r'OPENSSL_|SSL_library_init|EVP_'), 'crypto'),
-            'uCLibc': (re.compile(r'uCLIBC|__uclibc|vprintf'), 'libc'),
-            'BusyBox': (re.compile(r'BusyBox\s+v?\d+'), 'utilities'),
-            'Zlib': (re.compile(r'zlib_h\w+|deflateInit|inflateEnd'), 'compression'),
-            'Newlib': (re.compile(r'_newlib_version|sbrk'), 'libc'),
-            'Chromium': (re.compile(r'Chromium|blink::'), 'browser'),
+            'FreeRTOS': (re.compile(r'(?i)freertos|xtaskcreate|pvportmalloc|xsemaphorecreate'), 'rtos'),
+            'lwIP': (re.compile(r'(?i)lwip|netif_add|pbuf_alloc|tcp_connect|udp_sendto'), 'network'),
+            'wolfSSL': (re.compile(r'(?i)wolfssl|wolfcrypt|ssl_set_fd'), 'crypto'),
+            'mbedTLS': (re.compile(r'(?i)mbedtls'), 'crypto'),
+            'OpenSSL': (re.compile(r'(?i)openssl|ssl_library_init|evp_'), 'crypto'),
+            'uCLibc': (re.compile(r'(?i)uclibc|__uclibc|vprintf'), 'libc'),
+            'BusyBox': (re.compile(r'(?i)busybox\s+v?\d+'), 'utilities'),
+            'Zlib': (re.compile(r'(?i)zlib_h\w+|deflateinit|inflateend'), 'compression'),
+            'Newlib': (re.compile(r'(?i)_newlib_version|sbrk'), 'libc'),
+            'Chromium': (re.compile(r'(?i)chromium|blink::'), 'browser'),
         }
         
         detected = {}
