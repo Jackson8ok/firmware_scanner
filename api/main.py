@@ -360,8 +360,25 @@ async def upload_firmware(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"上传失败：{str(e)}")
 
 @_base_app.post("/api/scan")
-async def start_scan(firmware_id: str = Form(...), firmware_type: str = Form(...)):
-    """开始扫描"""
+async def start_scan(
+    firmware_id: str = Form(...), 
+    firmware_type: str = Form(...),
+    sbom_id: Optional[str] = Form(None, description="可选：SBOM ID 用于融合分析（Phase 4）")
+):
+    """开始扫描
+    
+    Args:
+        firmware_id: 固件文件 ID
+        firmware_type: 固件类型（auto/bin/img/squashfs 等）
+        sbom_id: 可选，SBOM ID 用于融合分析（Phase 4 功能）
+    
+    Returns:
+        task_id: 扫描任务 ID
+    
+    Phase 4 (v2.7.2):
+        - 支持传入 sbom_id 进行 SBOM × 指纹融合分析
+        - 扫描结果将包含 A/B/C 证据分层和加权统计
+    """
     try:
         queue = get_queue()
         
@@ -372,12 +389,16 @@ async def start_scan(firmware_id: str = Form(...), firmware_type: str = Form(...
         if not firmware_path.exists():
             raise HTTPException(status_code=404, detail="文件不存在")
         
-        task_id = queue.add_task(str(firmware_path), firmware_type)
+        # Phase 4 (v2.7.2): 支持 SBOM 融合扫描
+        task_id = queue.add_task(str(firmware_path), firmware_type, sbom_id=sbom_id)
+        
+        logger.info(f"🔍 扫描任务已提交：task_id={task_id}, sbom_id={sbom_id}")
         
         return {
             "success": True,
             "task_id": task_id,
-            "message": "扫描任务已提交"
+            "sbom_enabled": sbom_id is not None,
+            "message": "扫描任务已提交" + (" (SBOM 融合分析)" if sbom_id else "")
         }
     except HTTPException:
         raise

@@ -305,8 +305,64 @@ class ScanQueue:
         
         logger.info(f"扫描队列初始化完成 (最大并发：{max_concurrent})")
     
+    def _calculate_weighted_cve(self, fused_components: List[Dict], vulnerabilities: List) -> Dict:
+        """
+        计算加权 CVE 统计（Phase 4 v2.7.2）
+        
+        根据证据等级加权：
+        - Level A (双源匹配): 权重 1.25
+        - Level B (SBOM only): 权重 1.0
+        - Level C (指纹 only): 权重 0.75
+        
+        Returns:
+            Dict: {
+                'critical_weighted': float,
+                'high_weighted': float,
+                'medium_weighted': float,
+                'low_weighted': float,
+                'total_weighted': float
+            }
+        """
+        weighted_counts = {
+            'critical_weighted': 0.0,
+            'high_weighted': 0.0,
+            'medium_weighted': 0.0,
+            'low_weighted': 0.0,
+            'total_weighted': 0.0
+        }
+        
+        # 构建组件 CVE 映射
+        component_cve_map = {}
+        for comp in fused_components:
+            comp_name = comp.get('name', '')
+            comp_version = comp.get('version', '')
+            evidence_level = comp.get('evidence_level', 'C')
+            key = f"{comp_name}:{comp_version}"
+            component_cve_map[key] = evidence_level
+        
+        # 计算加权 CVE 数
+        for vuln in vulnerabilities:
+            severity = vuln.severity if hasattr(vuln, 'severity') else vuln.get('severity', 'Medium')
+            comp_name = vuln.component_name if hasattr(vuln, 'component_name') else vuln.get('component', '')
+            comp_version = vuln.component_version if hasattr(vuln, 'component_version') else vuln.get('version', '')
+            
+            key = f"{comp_name}:{comp_version}"
+            evidence_level = component_cve_map.get(key, 'C')
+            
+            # 权重
+            weight = {'A': 1.25, 'B': 1.0, 'C': 0.75}.get(evidence_level, 0.75)
+            
+            # 加权计数
+            severity_key = f"{severity.lower()}_weighted"
+            if severity_key in weighted_counts:
+                weighted_counts[severity_key] += weight
+                weighted_counts['total_weighted'] += weight
+        
+        return weighted_counts
+    
     def add_task(self, firmware_path: str, firmware_type: str, 
-                 filename: Optional[str] = None) -> str:
+                 filename: Optional[str] = None, 
+                 sbom_id: Optional[str] = None) -> str:
         """
         添加扫描任务
         
@@ -314,6 +370,7 @@ class ScanQueue:
             firmware_path: 固件文件路径
             firmware_type: 固件类型 (squashfs/hex/srec/bin)
             filename: 文件名（可选，从路径自动提取）
+            sbom_id: SBOM ID（可选，Phase 4 融合分析）
         
         Returns:
             task_id: 任务 ID
@@ -334,10 +391,14 @@ class ScanQueue:
             created_at=datetime.now().isoformat()
         )
         
+        # Phase 4 (v2.7.2): 保存 sbom_id 到任务元数据
+        if sbom_id:
+            task.result = {"sbom_id": sbom_id}
+        
         # 保存到数据库
         self.db.save_task(task)
         
-        logger.info(f"✅ 任务已添加：{task_id} ({filename})")
+        logger.info(f"✅ 任务已添加：{task_id} ({filename})" + (f" [SBOM: {sbom_id}]" if sbom_id else ""))
         
         # 如果有运行中的工作进程，立即调度
         if self.running:
@@ -580,6 +641,66 @@ class ScanQueue:
             # 计算每个 CVE 的 R155 合规状态
             violating_cves = {v.get('cve_id', '') for v in r155_report.get('violations', [])}
             
+            # ========== Phase 4 (v2.7.2): SBOM 融合分析（如果有 sbom_id）==========
+            fusion_result = None
+            sbom_id = task.result.get('sbom_id') if task.result else None
+            
+            if sbom_id:
+                try:
+                    update_progress("fusion_analysis", 92, "正在进行 SBOM 融合分析")
+                    logger.info(f"🔀 Phase 4: 启动融合分析 - sbom_id={sbom_id}")
+                    
+                    from services.sbom.sbom_fusion import SBOMFusionEngine
+                    from services.sbom.sbom_api import sbom_db
+                    
+                    # 获取 SBOM 记录
+                    sbom_record = sbom_db.get(sbom_id)
+                    if not sbom_record:
+                        logger.warning(f"SBOM 记录不存在：{sbom_id}，跳过融合分析")
+                    else:
+                        # 转换 SBOM 组件格式
+                        sbom_components = []
+                        for comp in json.loads(sbom_record['components']):
+                            sbom_components.append({
+                                'name': comp.get('name', ''),
+                                'version': comp.get('version', ''),
+                                'purl': comp.get('purl', ''),
+                                'cpe': comp.get('cpe', ''),
+                                'source': 'sbom'
+                            })
+                        
+                        # 创建融合引擎
+                        firmware_path_str = str(extracted_path) if 'extracted_path' in locals() else task.firmware_path
+                        fusion_engine = SBOMFusionEngine(firmware_path=firmware_path_str)
+                        
+                        # 执行融合分析
+                        fused_components = fusion_engine.fuse(sbom_components, [c.to_dict() for c in components])
+                        
+                        # 获取融合摘要
+                        summary = fusion_engine.get_fusion_summary()
+                        
+                        # 构建融合结果
+                        fusion_result = {
+                            'enabled': True,
+                            'sbom_id': sbom_id,
+                            'fused_components': fused_components,
+                            'evidence_summary': summary,
+                            'weighted_cve': self._calculate_weighted_cve(fused_components, vulnerabilities)
+                        }
+                        
+                        logger.info(f"✅ Phase 4: 融合分析完成 - A:{summary['level_a']}, B:{summary['level_b']}, C:{summary['level_c']}")
+                        update_progress("fusion_analysis", 94, f"融合完成 (A:{summary['level_a']}, B:{summary['level_b']}, C:{summary['level_c']})")
+                        
+                except Exception as e:
+                    logger.error(f"❌ Phase 4 融合分析失败：{e}")
+                    fusion_result = {
+                        'enabled': True,
+                        'sbom_id': sbom_id,
+                        'error': str(e),
+                        'fallback': 'standard_scan'
+                    }
+            # ========== Phase 4 End ==========
+            
             # 构建结果对象 - r155_compliance 字段使用统一的 dict 格式
             result = {
                 'firmware_id': task.task_id,
@@ -605,6 +726,7 @@ class ScanQueue:
                     'r155_non_compliant': v.cve_id in violating_cves
                 } for v in sorted(vulnerabilities, key=lambda x: x.priority_score or 0, reverse=True)],
                 'r155_compliance': compliance_dict,  # 使用统一的 dict 格式
+                'phase4_fusion': fusion_result,  # Phase 4 (v2.7.2): 融合分析结果
                 'scan_time': datetime.now().isoformat()
             }
             
