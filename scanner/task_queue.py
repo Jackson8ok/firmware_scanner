@@ -674,8 +674,9 @@ class ScanQueue:
                             })
                         
                         # 创建融合引擎
-                        firmware_path_str = str(extracted_path) if 'extracted_path' in locals() else task.firmware_path
-                        fusion_engine = SBOMFusionEngine(firmware_path=firmware_path_str)
+                        # 注意：SBOMFusionEngine 不接收 firmware_path 参数
+                        # 融合引擎仅处理组件数据，不直接读取固件文件
+                        fusion_engine = SBOMFusionEngine()
                         
                         # 执行融合分析
                         fused_components = fusion_engine.fuse(sbom_components, [c.to_dict() for c in components])
