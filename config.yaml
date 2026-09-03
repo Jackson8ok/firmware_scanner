@@ -1,0 +1,71 @@
+# 玄武·AFVS 配置
+# Auto Firmware Vulnerability Scanner (汽车固件漏洞扫描器)
+
+app:
+  name: "玄武·AFVS"
+  version: "2.7.1"
+  description: "Auto Firmware Vulnerability Scanner - 汽车固件漏洞扫描器"
+
+server:
+  host: "127.0.0.1"
+  port: 8765
+  debug: true
+
+# CORS 配置
+cors:
+  allowed_origins:
+    - "http://localhost:3000"
+    - "http://127.0.0.1:3000"
+    - "http://localhost:8080"
+    - "https://2098771-proxy-8000.dsw-gateway-cn-hangzhou.data.aliyun.com"
+    - "https://2101165-proxy-8000.dsw-gateway-cn-hangzhou.data.aliyun.com"
+  allow_credentials: true
+
+# 任务队列配置
+queue:
+  max_concurrent: 3  # 最大并发任务数（根据 CPU 核心数调整）
+  cleanup_days: 7    # 自动清理旧任务的保留天数（天）
+
+paths:
+  # Grype 二进制路径
+  grype_bin: "${GRYPE_BIN:-./tools/grype/grype}"
+  # Grype SQLite 数据库路径 (~2GB) - 可通过环境变量 GRYPE_DB_PATH 覆盖
+  grype_db: "${GRYPE_DB_PATH:-/mnt/workspace/firmware_scanner/db/grype/6/vulnerability.db}"
+  # 固件上传目录
+  uploads: "./uploads"
+  # SBOM 上传目录（v2.7.1 新增）
+  sbom_uploads: "${SBOM_UPLOAD_DIR:-./uploads/sbom}"
+  # SBOM 数据库路径（v2.7.1 新增）
+  sbom_db: "${SBOM_DB_PATH:-./db/sbom.db}"
+  # 解包工作目录（Binwalk + 备用方案）
+  workspace: "./workspace"
+  # 报告输出目录
+  reports: "./reports"
+  
+# 漏洞优先级权重
+scoring:
+  cvss_weight: 0.35
+  epss_weight: 0.45
+  component_weight: 0.20
+  
+# R155 合规规则
+compliance:
+  cvss_threshold: 7.0
+  days_threshold: 180
+  
+# MCU 特征识别（增强版）
+mcu_patterns:
+  freertos: ["FreeRTOS", "xTaskCreate", "pvPortMalloc"]
+  lwip: ["lwIP", "tcp_connect", "udp_sendto"]
+  wolfssl: ["wolfSSL_", "WOLFSSL_"]
+  mbedtls: ["mbedtls_", "MBEDTLS_"]
+  zlib: ["zlib", "deflateInit"]
+  
+# 解包策略配置
+extraction:
+  # 优先工具顺序：binwalk > unsquashfs > 7zip
+  preferred_tools: ["binwalk", "unsquashfs", "7zip"]
+  # Binwalk 递归提取深度
+  max_recursion: 3
+  # 是否启用熵分析
+  entropy_analysis: true

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>玄武·AFVS 简版报告</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #1a237e;
+            border-bottom: 2px solid #3949ab;
+            padding-bottom: 10px;
+        }
+        
+        .summary {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+        .vuln {
+            border-left: 4px solid #d32f2f;
+            padding: 15px;
+            margin: 15px 0;
+            background: #ffebee;
+        }
+        
+        .vuln h3 {
+            color: #c62828;
+            margin: 0 0 10px 0;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐢 玄武·AFVS 简版报告</h1>
+        
+        <div class="summary">
+            <h2>摘要</h2>
+            <p><strong>固件:</strong> {{ scan.firmware_name }}</p>
+            <p><strong>扫描时间:</strong> {{ scan.scan_date }}</p>
+            <p><strong>总漏洞数:</strong> {{ scan.total_vulns }}</p>
+            <p><strong>严重 + 高危:</strong> {{ scan.critical_count + scan.high_count }}</p>
+        </div>
+        
+        <h2>关键漏洞 (仅严重 + 高危)</h2>
+        {% if vulns %}
+        {% for vuln in vulns %}
+        <div class="vuln">
+            <h3>{{ vuln.cve_id }} - {{ vuln.severity }}</h3>
+            <p><strong>组件:</strong> {{ vuln.component_name }} {{ vuln.component_version }}</p>
+            <p><strong>CVSS:</strong> {{ vuln.cvss_score or 'N/A' }}</p>
+            <p>{{ vuln.description[:200] }}...</p>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p>🎉 未发现严重或高危漏洞！</p>
+        {% endif %}
+        
+        <div class="footer">
+            <p>生成时间：{{ generated_at }} | AFVS v{{ version }}</p>
+            <p>注：此为简版报告，完整报告请使用 standard 或 detailed 模板</p>
+        </div>
+    </div>
+</body>
+</html>

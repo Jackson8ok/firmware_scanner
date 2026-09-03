@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>玄武·AFVS 扫描报告 - OpenWrt_21.02.5_bcm27xx_bcm2711_ext4-factory.img.gz</title>
+    <style>
+        :root {
+            --primary-color: #1a237e;
+            --secondary-color: #3949ab;
+            --critical-color: #d32f2f;
+            --high-color: #f57c00;
+            --medium-color: #fbc02d;
+            --low-color: #388e3c;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .header {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: var(--primary-color);
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header .subtitle {
+            color: var(--secondary-color);
+            font-size: 1.2em;
+        }
+        
+        .meta-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .meta-item {
+            text-align: center;
+        }
+        
+        .meta-item strong {
+            color: var(--primary-color);
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card h3 {
+            color: var(--secondary-color);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        
+        .card .value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .card.critical .value { color: var(--critical-color); }
+        .card.high .value { color: var(--high-color); }
+        .card.medium .value { color: var(--medium-color); }
+        .card.low .value { color: var(--low-color); }
+        
+        .risk-score {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .risk-score .score {
+            font-size: 4em;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .risk-score .label {
+            font-size: 1.2em;
+            color: #666;
+            margin-top: 10px;
+        }
+        
+        .section {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .section h2 {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--secondary-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .vuln-list {
+            list-style: none;
+        }
+        
+        .vuln-item {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .vuln-item:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .vuln-item.critical { border-left: 5px solid var(--critical-color); }
+        .vuln-item.high { border-left: 5px solid var(--high-color); }
+        .vuln-item.medium { border-left: 5px solid var(--medium-color); }
+        .vuln-item.low { border-left: 5px solid var(--low-color); }
+        
+        .vuln-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .vuln-header h3 {
+            color: var(--primary-color);
+            font-size: 1.3em;
+        }
+        
+        .severity-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .severity-badge.critical { background: var(--critical-color); }
+        .severity-badge.high { background: var(--high-color); }
+        .severity-badge.medium { background: var(--medium-color); }
+        .severity-badge.low { background: var(--low-color); }
+        
+        .vuln-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .vuln-meta-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        .vuln-meta-item strong {
+            color: var(--secondary-color);
+            display: block;
+            font-size: 0.8em;
+        }
+        
+        .vuln-description {
+            color: #555;
+            line-height: 1.8;
+        }
+        
+        .recommendations {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+        
+        .recommendations h2 {
+            color: white;
+            border-bottom: 3px solid rgba(255,255,255,0.3);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .recommendations ul {
+            list-style: none;
+        }
+        
+        .recommendations li {
+            padding: 10px 0;
+            font-size: 1.1em;
+        }
+        
+        .recommendations li:before {
+            content: "✓ ";
+            color: #4caf50;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: rgba(255,255,255,0.8);
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+        }
+        
+        @media print {
+            body {
+                background: white;
+            }
+            
+            .container {
+                padding: 0;
+            }
+            
+            .card, .section, .header {
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 10px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .summary-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>🐢 玄武·AFVS</h1>
+            <div class="subtitle">汽车固件漏洞扫描报告</div>
+            
+            <div class="meta-info">
+                <div class="meta-item">
+                    <strong>固件名称</strong>
+                    OpenWrt_21.02.5_bcm27xx_bcm2711_ext4-factory.img.gz
+                </div>
+                <div class="meta-item">
+                    <strong>扫描时间</strong>
+                    2026-08-26 15:30:00
+                </div>
+                <div class="meta-item">
+                    <strong>扫描耗时</strong>
+                    45.8 秒
+                </div>
+                <div class="meta-item">
+                    <strong>组件数量</strong>
+                    156
+                </div>
+            </div>
+        </div>
+        
+        <!-- 风险评分 -->
+        <div class="risk-score">
+            <div class="score">100</div>
+            <div class="label">风险评分 (0-100)</div>
+        </div>
+        
+        <!-- 统计卡片 -->
+        <div class="summary-cards">
+            <div class="card critical">
+                <h3>严重漏洞</h3>
+                <div class="value">3</div>
+            </div>
+            <div class="card high">
+                <h3>高危漏洞</h3>
+                <div class="value">8</div>
+            </div>
+            <div class="card medium">
+                <h3>中危漏洞</h3>
+                <div class="value">15</div>
+            </div>
+            <div class="card low">
+                <h3>低危漏洞</h3>
+                <div class="value">21</div>
+            </div>
+        </div>
+        
+        <!-- 漏洞列表 -->
+        <div class="section">
+            <h2>📋 漏洞详情</h2>
+            <ul class="vuln-list">
+                <li class="vuln-item critical">
+                    <div class="vuln-header">
+                        <h3>CVE-2026-1234</h3>
+                        <span class="severity-badge critical">Critical</span>
+                    </div>
+                    
+                    <div class="vuln-meta">
+                        <div class="vuln-meta-item">
+                            <strong>组件</strong>
+                            openssl 1.1.1k
+                        </div>
+                        <div class="vuln-meta-item">
+                            <strong>CVSS</strong>
+                            9.8
+                        </div>
+                        <div class="vuln-meta-item">
+                            <strong>EPSS</strong>
+                            85.0%
+                        </div>
+                        <div class="vuln-meta-item">
+                            <strong>发布日期</strong>
+                            2026-01-15
+                        </div>
+                    </div>
+                    
+                    <div class="vuln-description">
+                        OpenSSL 中存在严重缓冲区溢出漏洞，允许远程攻击者执行任意代码
+                    </div>
+                    
+                    <div style="margin-top: 10px; padding: 10px; background: #e8f5e9; border-radius: 5px;">
+                        <strong>💡 修复建议:</strong> 升级到 1.1.1l 或更高版本
+                    </div>
+                </li>
+                <li class="vuln-item high">
+                    <div class="vuln-header">
+                        <h3>CVE-2026-5678</h3>
+                        <span class="severity-badge high">High</span>
+                    </div>
+                    
+                    <div class="vuln-meta">
+                        <div class="vuln-meta-item">
+                            <strong>组件</strong>
+                            curl 7.79.0
+                        </div>
+                        <div class="vuln-meta-item">
+                            <strong>CVSS</strong>
+                            7.5
+                        </div>
+                        <div class="vuln-meta-item">
+                            <strong>EPSS</strong>
+                            45.0%
+                        </div>
+                        <div class="vuln-meta-item">
+                            <strong>发布日期</strong>
+                            2026-03-20
+                        </div>
+                    </div>
+                    
+                    <div class="vuln-description">
+                        Curl 中存在信息泄露漏洞，可能导致敏感数据暴露
+                    </div>
+                    
+                    <div style="margin-top: 10px; padding: 10px; background: #e8f5e9; border-radius: 5px;">
+                        <strong>💡 修复建议:</strong> 升级到 7.79.1 或更高版本
+                    </div>
+                </li>
+                <li class="vuln-item medium">
+                    <div class="vuln-header">
+                        <h3>CVE-2026-9012</h3>
+                        <span class="severity-badge medium">Medium</span>
+                    </div>
+                    
+                    <div class="vuln-meta">
+                        <div class="vuln-meta-item">
+                            <strong>组件</strong>
+                            zlib 1.2.11
+                        </div>
+                        <div class="vuln-meta-item">
+                            <strong>CVSS</strong>
+                            5.3
+                        </div>
+                        <div class="vuln-meta-item">
+                            <strong>EPSS</strong>
+                            25.0%
+                        </div>
+                        <div class="vuln-meta-item">
+                            <strong>发布日期</strong>
+                            2026-05-10
+                        </div>
+                    </div>
+                    
+                    <div class="vuln-description">
+                        Zlib 中存在拒绝服务漏洞，可能导致应用程序崩溃
+                    </div>
+                    
+                    <div style="margin-top: 10px; padding: 10px; background: #e8f5e9; border-radius: 5px;">
+                        <strong>💡 修复建议:</strong> 升级到 1.2.12 或更高版本
+                    </div>
+                </li>
+                <li class="vuln-item low">
+                    <div class="vuln-header">
+                        <h3>CVE-2026-3456</h3>
+                        <span class="severity-badge low">Low</span>
+                    </div>
+                    
+                    <div class="vuln-meta">
+                        <div class="vuln-meta-item">
+                            <strong>组件</strong>
+                            busybox 1.35.0
+                        </div>
+                        <div class="vuln-meta-item">
+                            <strong>CVSS</strong>
+                            3.1
+                        </div>
+                        <div class="vuln-meta-item">
+                            <strong>EPSS</strong>
+                            8.0%
+                        </div>
+                        <div class="vuln-meta-item">
+                            <strong>发布日期</strong>
+                            2026-06-01
+                        </div>
+                    </div>
+                    
+                    <div class="vuln-description">
+                        BusyBox 中存在轻微的信息泄露问题
+                    </div>
+                    
+                    <div style="margin-top: 10px; padding: 10px; background: #e8f5e9; border-radius: 5px;">
+                        <strong>💡 修复建议:</strong> 升级到 1.35.1 或更高版本
+                    </div>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- 修复建议 -->
+        
+        <!-- 页脚 -->
+        <div class="footer">
+            <p>报告生成时间：2026-08-26 16:31:11</p>
+            <p>玄武·AFVS vv2.6.0 | Auto Firmware Vulnerability Scanner</p>
+            <p>GitHub: https://github.com/Jackson8ok/afvs-auto-firmware-vulnerability-scanner</p>
+        </div>
+    </div>
+</body>
+</html>

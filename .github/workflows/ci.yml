@@ -1,0 +1,248 @@
+# CI/CD Pipeline for Firmware Scanner
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # 每周日凌晨 2 点运行一次
+    - cron: '0 2 * * SUN'
+
+jobs:
+  # ============================================================
+  # Lint & Type Check
+  # ============================================================
+  lint:
+    name: 🔍 Lint & Type Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black mypy isort
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Lint with flake8
+        run: |
+          # 停止于错误，忽略未定义的变量
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # 警告级别，忽略一些常见警告
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: Format check with black
+        run: |
+          black --check --diff . || true
+
+      - name: Sort imports with isort
+        run: |
+          isort --check-only --diff . || true
+
+      - name: Type check with mypy
+        run: |
+          mypy scanner/ api/ --ignore-missing-imports || true
+
+  # ============================================================
+  # Unit Tests
+  # ============================================================
+  test:
+    name: 🧪 Run Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov pytest-asyncio
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run P0 Bug Fixes Verification
+        run: |
+          if [ -f test_p0_fixes.py ]; then
+            python test_p0_fixes.py || exit 1
+          else
+            echo "⚠️ test_p0_fixes.py not found"
+          fi
+
+      - name: Run P1 Improvements Verification
+        run: |
+          if [ -f test_p1_improvements.py ]; then
+            python test_p1_improvements.py || exit 1
+          else
+            echo "⚠️ test_p1_improvements.py not found"
+          fi
+
+      - name: Run pytest
+        run: |
+          if [ -d tests ] && [ "$(ls -A tests)" ]; then
+            pytest tests/ -v --cov=scanner --cov=api --cov-report=xml --cov-report=term-missing
+          else
+            echo "⚠️ No tests directory found, skipping pytest"
+          fi
+
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9'
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          env_vars: OS,PYTHON
+          name: codecov-umbrella
+
+  # ============================================================
+  # Security Scan
+  # ============================================================
+  security:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install security tools
+        run: |
+          pip install bandit safety
+
+      - name: Run Bandit SAST
+        run: |
+          bandit -r scanner/ api/ -f json -o bandit-report.json || true
+          bandit -r scanner/ api/ || true
+
+      - name: Check dependencies for vulnerabilities
+        run: |
+          if [ -f requirements.txt ]; then
+            safety check -r requirements.txt || true
+          fi
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+          retention-days: 30
+
+  # ============================================================
+  # Build Docker Image
+  # ============================================================
+  build:
+    name: 🐳 Build Docker
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build image
+        run: |
+          if [ -f Dockerfile ]; then
+            docker build -t firmware-scanner:${{ github.sha }} .
+          else
+            echo "⚠️ Dockerfile not found, skipping build"
+          fi
+
+  # ============================================================
+  # Deploy on Release
+  # ============================================================
+  deploy:
+    name: 🚀 Deploy
+    runs-on: ubuntu-latest
+    needs: [test, lint, build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy notification
+        run: |
+          echo "🎉 Production deployment triggered"
+          echo "Commit: ${{ github.sha }}"
+          echo "Author: ${{ github.actor }}"
+          echo ""
+          echo "💡 Note: Configure actual deployment steps here:"
+          echo "   - SSH into server"
+          echo "   - Pull latest code"
+          echo "   - Restart services"
+          echo "   - Notify Slack/Discord"
+
+  # ============================================================
+  # Documentation Build
+  # ============================================================
+  docs:
+    name: 📚 Build Docs
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install documentation tools
+        run: |
+          pip install sphinx sphinx-rtd-theme
+          if [ -f requirements-docs.txt ]; then
+            pip install -r requirements-docs.txt
+          fi
+
+      - name: Build Sphinx docs (if exists)
+        run: |
+          if [ -d docs ] && [ -f docs/conf.py ]; then
+            cd docs
+            make html
+          else
+            echo "⚠️ No Sphinx docs found"
+          fi
+
+      - name: Upload documentation artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: documentation
+          path: docs/_build/html/
+          retention-days: 7

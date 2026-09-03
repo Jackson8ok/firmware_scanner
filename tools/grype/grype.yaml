@@ -1,0 +1,15 @@
+# Grype CLI 配置（v2.5.0）
+# 用于绕过 DB 过期检查
+
+# 禁用 DB 年龄验证
+db:
+  auto-update: false
+  validate-age: false
+  max-allowed-built-age: 86400000000000  # 100 天（纳秒）
+
+# 禁用应用更新检查
+check-for-app-update: false
+
+# 输出格式
+output:
+  - json

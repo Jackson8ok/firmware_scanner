@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐢 玄武·AFVS - 汽车固件漏洞扫描器</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    
+    <!-- WebSocket 连接状态指示器样式 -->
+    <style>
+        .ws-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .ws-indicator:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .ws-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .ws-text {
+            white-space: nowrap;
+        }
+        
+        /* 已连接 - 绿色 */
+        .ws-connected {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .ws-connected .ws-dot {
+            background: #28a745;
+        }
+        
+        /* 未连接 - 灰色 */
+        .ws-disconnected {
+            background: #f8f9fa;
+            border-color: #6c757d;
+            color: #495057;
+        }
+        
+        .ws-disconnected .ws-dot {
+            background: #6c757d;
+        }
+        
+        /* 重连中 - 黄色 */
+        .ws-reconnecting {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+        
+        .ws-reconnecting .ws-dot {
+            background: #ffc107;
+            animation: blink 0.5s infinite;
+        }
+        
+        /* 连接失败 - 红色 */
+        .ws-failed {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        
+        .ws-failed .ws-dot {
+            background: #dc3545;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.2; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🐢 玄武·AFVS - 汽车固件漏洞扫描器</h1>
+            <p class="subtitle">基于 Grype + Syft 的多架构固件安全分析 | <span id="app-version">v2.6.0</span></p>
+        </header>
+
+        <main>
+            <!-- 上传和扫描区域 -->
+            <section class="upload-section">
+                <h2>📤 固件扫描</h2>
+                
+                <!-- 单个文件扫描 -->
+                <div class="scan-mode">
+                    <h3>单个文件扫描</h3>
+                    <form id="singleScanForm" enctype="multipart/form-data">
+                        <div class="file-input-wrapper">
+                            <input type="file" id="firmwareFile" accept=".bin,.hex,.srec,.squashfs,.img">
+                            <label for="firmwareFile" class="custom-file-upload">
+                                📁 选择固件文件
+                            </label>
+                        </div>
+                        <select id="firmwareType">
+                            <option value="squashfs">SquashFS (Linux)</option>
+                            <option value="hex">HEX (MCU)</option>
+                            <option value="srec">SREC (MCU)</option>
+                            <option value="bin">Binary (MCU)</option>
+                        </select>
+                        <button type="submit" class="btn btn-primary">上传并扫描</button>
+                    </form>
+                </div>
+
+                <!-- 批量扫描 -->
+                <div class="scan-mode" style="margin-top: 20px;">
+                    <h3>批量扫描</h3>
+                    <p style="color: #666; font-size: 0.9em;">⚠️ 注意：批量扫描会同时处理多个固件，并发数：<span id="concurrentDisplay">3</span></p>
+                    
+                    <div id="batchFileList" style="margin: 10px 0; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                        <p id="batchFileCount">尚未选择文件</p>
+                    </div>
+                    
+                    <form id="batchScanForm">
+                        <div class="batch-controls">
+                            <input type="file" id="batchFileInput" multiple accept=".bin,.hex,.srec,.squashfs,.img" style="display: none;">
+                            <button type="button" onclick="document.getElementById('batchFileInput').click()" class="btn btn-secondary">
+                                📂 选择多个文件
+                            </button>
+                            <select id="batchFirmwareType" style="padding: 8px;">
+                                <option value="bin">类型：Binary</option>
+                                <option value="hex">类型：HEX</option>
+                                <option value="srec">类型：SREC</option>
+                                <option value="squashfs">类型：SquashFS</option>
+                            </select>
+                            <button type="submit" id="batchSubmitBtn" class="btn btn-success" disabled>
+                                🚀 开始批量扫描
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 进度显示 -->
+                <div id="uploadProgress" class="progress hidden">
+                    <div class="progress-bar"></div>
+                    <p id="progressText">正在上传...</p>
+                </div>
+
+                <!-- 实时任务状态 -->
+                <div id="taskStatusSection" class="hidden" style="margin-top: 20px;">
+                    <h4>当前任务状态</h4>
+                    <div id="activeTasks" class="task-list"></div>
+                </div>
+            </section>
+
+            <!-- 仪表板 -->
+            <section class="dashboard-section" id="dashboard">
+                <h2>📊 扫描结果仪表板</h2>
+                
+                <!-- 队列状态 -->
+                <div class="queue-status" id="queueStatusSection">
+                    <h3>⚡ 任务队列状态</h3>
+                    <div class="stats-row" id="queueStats">
+                        <div class="stat-badge"><strong>等待中:</strong> <span id="queuedCount">0</span></div>
+                        <div class="stat-badge"><strong>进行中:</strong> <span id="runningCount">0</span></div>
+                        <div class="stat-badge"><strong>已完成:</strong> <span id="completedCount">0</span></div>
+                        <div class="stat-badge"><strong>失败:</strong> <span id="failedCount">0</span></div>
+                    </div>
+                    <button onclick="refreshQueueStats()" class="btn btn-small">刷新状态</button>
+                </div>
+                
+                <!-- 筛选控制面板（新增） -->
+                <div class="filter-panel" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 15px;">🔍 数据筛选</h3>
+                    <div class="filter-controls" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+                        <label>时间范围:</label>
+                        <select id="timeRangeFilter" style="padding: 8px;">
+                            <option value="7">近 7 天</option>
+                            <option value="30">近 30 天</option>
+                            <option value="90">近 90 天</option>
+                            <option value="all">全部</option>
+                        </select>
+                        
+                        <label>严重程度:</label>
+                        <select id="severityFilter" style="padding: 8px;">
+                            <option value="all">全部严重程度</option>
+                            <option value="critical">严重</option>
+                            <option value="high">高危</option>
+                            <option value="medium">中危</option>
+                            <option value="low">低危</option>
+                        </select>
+                        
+                        <label>固件类型:</label>
+                        <select id="typeFilter" style="padding: 8px;">
+                            <option value="all">全部类型</option>
+                            <option value="bin">Binary</option>
+                            <option value="hex">HEX</option>
+                            <option value="srec">SREC</option>
+                            <option value="squashfs">SquashFS</option>
+                        </select>
+                        
+                        <button onclick="applyFilters()" class="btn btn-primary btn-small">应用筛选</button>
+                        <button onclick="resetFilters()" class="btn btn-secondary btn-small">重置</button>
+                        
+                        <div style="margin-left: auto;">
+                            <button onclick="exportExcel()" class="btn btn-success btn-small">📊 Excel 导出</button>
+                            <button onclick="exportPDF()" class="btn btn-danger btn-small">📄 PDF 导出</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 漏洞统计卡片 -->
+                <div id="statsGrid" class="stats-grid">
+                    <div class="stat-card">
+                        <h3>总漏洞数</h3>
+                        <p class="stat-value" id="totalCves">0</p>
+                    </div>
+                    <div class="stat-card critical">
+                        <h3>严重</h3>
+                        <p class="stat-value" id="criticalCount">0</p>
+                    </div>
+                    <div class="stat-card high">
+                        <h3>高危</h3>
+                        <p class="stat-value" id="highCount">0</p>
+                    </div>
+                    <div class="stat-card medium">
+                        <h3>中危</h3>
+                        <p class="stat-value" id="mediumCount">0</p>
+                    </div>
+                    <div class="stat-card low">
+                        <h3>低危</h3>
+                        <p class="stat-value" id="lowCount">0</p>
+                    </div>
+                    <div class="stat-card r155">
+                        <h3>R155 不合规</h3>
+                        <p class="stat-value" id="r155Count">0</p>
+                    </div>
+                    <div class="stat-card compliance" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                        <h3>R155 合规得分</h3>
+                        <p class="stat-value" id="complianceScore">--/100</p>
+                        <small id="complianceLevel"></small>
+                    </div>
+                </div>
+
+                <!-- Canvas 图表 -->
+                <div class="charts-container" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; margin: 30px 0;">
+                    <div class="chart-card">
+                        <canvas id="severityChart" width="400" height="300"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <canvas id="priorityChart" width="400" height="300"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <canvas id="trendChart" width="400" height="300"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <canvas id="complianceRadar" width="400" height="300"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 扫描历史记录表（新增） -->
+                <div class="scan-history-section" style="margin-top: 40px;">
+                    <h3>📅 扫描历史</h3>
+                    <div class="table-responsive">
+                        <table id="historyTable">
+                            <thead>
+                                <tr>
+                                    <th>日期</th>
+                                    <th>固件 ID</th>
+                                    <th>文件名</th>
+                                    <th>类型</th>
+                                    <th>总 CVE</th>
+                                    <th>严重</th>
+                                    <th>高危</th>
+                                    <th>R155 不合规</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                <tr><td colspan="9" class="no-data">暂无扫描历史</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 漏洞列表 -->
+                <div class="vulnerabilities-section">
+                    <h3>漏洞详情（按优先级排序）</h3>
+                    <div class="filter-controls">
+                        <select id="severityFilter">
+                            <option value="all">全部严重程度</option>
+                            <option value="critical">严重</option>
+                            <option value="high">高危</option>
+                            <option value="medium">中危</option>
+                            <option value="low">低危</option>
+                        </select>
+                        <button id="exportPdfBtn" class="btn btn-primary">📄 导出 PDF 报告</button>
+                        <button id="exportExcelBtn" class="btn btn-secondary">📊 导出 Excel</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="vulnTable">
+                            <thead>
+                                <tr>
+                                    <th>CVE ID</th>
+                                    <th>组件</th>
+                                    <th>版本</th>
+                                    <th>严重程度</th>
+                                    <th>CVSS</th>
+                                    <th>优先级</th>
+                                    <th>R155 合规</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vulnTableBody">
+                                <tr><td colspan="8" class="no-data">暂无数据，请上传固件进行扫描</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 组件列表 -->
+            <section class="components-section" id="componentsSection" style="display: none;">
+                <h3>识别的组件</h3>
+                <div id="componentsList" class="components-grid"></div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 玄武·AFVS | Auto Firmware Vulnerability Scanner | <span id="footer-version">v2.6.0</span></p>
+            
+            <!-- WebSocket 连接状态指示器 -->
+            <div id="wsConnectionIndicator" class="ws-indicator ws-disconnected" title="WebSocket 未连接">
+                <span class="ws-dot"></span>
+                <span class="ws-text">正在连接...</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Socket.IO 客户端库（CDN v4，兼容服务器 python-socketio 5.x） -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.min.js"></script>
+    
+    <!-- Socket.IO 实时通知客户端 -->
+    <script src="/static/socketio-client.js?v=2.4.1"></script>
+    
+    <!-- jsPDF - 客户端 PDF 生成库 (CDN) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <!-- html2canvas - 用于将 HTML 转换为 Canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- 图表组件库 -->
+    <script src="/static/charts.js"></script>
+    
+    <!-- 高级图表（新增） -->
+    <script src="/static/advanced-charts.js"></script>
+    
+    <!-- 前端增强模块（新增） -->
+    <script src="/static/dashboard-enhanced.js"></script>
+    
+    <!-- 增强的样式（新增） -->
+    <link rel="stylesheet" href="/static/enhanced-styles.css">
+    
+    <!-- 主应用逻辑 -->
+    <script src="/static/app.js?v=2.4.1-fix5"></script>
+    
+    <!-- R155 合规报告前端交互 -->
+    <script src="/static/r155-ui.js"></script>
+</body>
+</html>

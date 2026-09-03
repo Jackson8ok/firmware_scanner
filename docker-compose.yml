@@ -1,0 +1,183 @@
+version: '3.8'
+
+# 玄武 固件漏洞扫描平台 - Docker Compose 配置
+# 
+# 快速启动：docker compose up -d
+# 停止服务：docker compose down
+# 查看日志：docker compose logs -f
+
+services:
+  # ============================================
+  # 主应用服务
+  # ============================================
+  scanner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production  # 使用生产环境镜像
+    container_name: xuanwu-scanner
+    restart: unless-stopped
+    
+    ports:
+      - "8000:8000"
+    
+    volumes:
+      # 持久化数据
+      - ./data:/app/data
+      # 可选：挂载自定义配置
+      # - ./config.local.yaml:/app/config.local.yaml:ro
+    
+    environment:
+      - APP_ENV=production
+      - PORT=8000
+      - HOST=0.0.0.0
+      # 数据库路径（可选，默认值在 config.yaml）
+      # - DATABASE_URL=/app/data/vulndb.sqlite
+      
+      # 日志级别
+      - LOG_LEVEL=INFO
+      
+      # Grype 数据库路径
+      - GRYPE_DB_PATH=/app/grype-db
+      
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # 网络设置
+    networks:
+      - xuanwu-network
+    
+    # 日志配置
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============================================
+  # 开发环境（可选）
+  # ============================================
+  scanner-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: xuanwu-scanner-dev
+    profiles: ["dev"]  # 仅在指定 profile 时启动
+    
+    ports:
+      - "8001:8000"
+    
+    volumes:
+      - .:/app  # 挂载源码实现热重载
+      - ./data:/app/data
+    
+    environment:
+      - APP_ENV=development
+      - DEBUG=true
+      - PYTHONUNBUFFERED=1
+    
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+    
+    depends_on:
+      - scanner
+
+  # ============================================
+  # Nginx 反向代理（可选）
+  # ============================================
+  nginx:
+    image: nginx:alpine
+    container_name: xuanwu-nginx
+    restart: unless-stopped
+    profiles: ["prod"]  # 生产环境专用
+    
+    ports:
+      - "80:80"
+      - "443:443"
+    
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro  # SSL 证书
+    
+    depends_on:
+      - scanner
+    networks:
+      - xuanwu-network
+
+  # ============================================
+  # Prometheus 监控（可选）
+  # ============================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: xuanwu-prometheus
+    profiles: ["monitoring"]  # 监控专用
+    restart: unless-stopped
+    
+    ports:
+      - "9090:9090"
+    
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.limits=prometheus:prometheus'
+    
+    networks:
+      - xuanwu-network
+
+volumes:
+  data:
+    driver: local
+  prometheus_data:
+    driver: local
+
+networks:
+  xuanwu-network:
+    driver: bridge
+
+# ============================================
+# 常用命令
+# ============================================
+#
+# 🔵 基础操作
+#   docker compose up -d              # 后台启动所有服务
+#   docker compose down               # 停止并移除容器
+#   docker compose restart            # 重启所有服务
+#   docker compose logs -f            # 查看所有日志
+#   docker compose logs -f scanner    # 只看 scanner 日志
+#
+# 🟢 开发模式
+#   docker compose --profile dev up   # 启动开发环境
+#   docker compose exec scanner bash  # 进入容器 shell
+#
+# 🔴 生产部署
+#   docker compose --profile prod up  # 启动生产环境（含 Nginx）
+#   docker compose pull               # 拉取最新镜像
+#   docker compose up -d --no-deps    # 无依赖更新
+#
+# 🔵 监控
+#   docker compose --profile monitoring up  # 启动监控栈
+#   open http://localhost:9090         # 访问 Prometheus
+#
+# 🟡 清理
+#   docker compose down -v             # 删除容器和数据卷
+#   docker system prune -a             # 清理未使用的镜像和容器
+#

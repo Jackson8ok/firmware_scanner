@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>扫描历史 - 玄武·AFVS</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🐢 扫描历史</h1>
+            <a href="/" class="btn btn-secondary">返回首页</a>
+        </header>
+
+        <main>
+            <section class="scans-list">
+                <h2>历史扫描任务</h2>
+                <div id="scansContainer" class="scans-grid">
+                    {% for scan in scans %}
+                    <div class="scan-card" data-id="{{ scan.id }}">
+                        <h3>{{ scan.filename }}</h3>
+                        <p>状态：{{ scan.status }}</p>
+                        <div class="scan-stats">
+                            <span class="badge critical">{{ scan.critical }} 严重</span>
+                            <span class="badge high">{{ scan.high }} 高危</span>
+                            <span class="badge medium">{{ (scan.total_cves - scan.critical - scan.high) if (scan.total_cves - scan.critical - scan.high) > 0 else 0 }} 其他</span>
+                        </div>
+                        <button onclick="viewScan('{{ scan.id }}')" class="btn btn-primary">查看详情</button>
+                    </div>
+                    {% endfor %}
+                    
+                    {% if not scans %}
+                    <p class="no-data">暂无扫描记录</p>
+                    {% endif %}
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+    function viewScan(firmwareId) {
+        window.location.href = `/?scan=${firmwareId}`;
+    }
+    </script>
+</body>
+</html>

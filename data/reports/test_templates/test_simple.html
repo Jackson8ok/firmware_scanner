@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>玄武·AFVS 简版报告</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #1a237e;
+            border-bottom: 2px solid #3949ab;
+            padding-bottom: 10px;
+        }
+        
+        .summary {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+        .vuln {
+            border-left: 4px solid #d32f2f;
+            padding: 15px;
+            margin: 15px 0;
+            background: #ffebee;
+        }
+        
+        .vuln h3 {
+            color: #c62828;
+            margin: 0 0 10px 0;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐢 玄武·AFVS 简版报告</h1>
+        
+        <div class="summary">
+            <h2>摘要</h2>
+            <p><strong>固件:</strong> OpenWrt_21.02.5_bcm27xx_bcm2711_ext4-factory.img.gz</p>
+            <p><strong>扫描时间:</strong> 2026-08-26 15:30:00</p>
+            <p><strong>总漏洞数:</strong> 47</p>
+            <p><strong>严重 + 高危:</strong> 11</p>
+        </div>
+        
+        <h2>关键漏洞 (仅严重 + 高危)</h2>
+        <div class="vuln">
+            <h3>CVE-2026-1234 - Critical</h3>
+            <p><strong>组件:</strong> openssl 1.1.1k</p>
+            <p><strong>CVSS:</strong> 9.8</p>
+            <p>OpenSSL 中存在严重缓冲区溢出漏洞，允许远程攻击者执行任意代码...</p>
+        </div>
+        <div class="vuln">
+            <h3>CVE-2026-5678 - High</h3>
+            <p><strong>组件:</strong> curl 7.79.0</p>
+            <p><strong>CVSS:</strong> 7.5</p>
+            <p>Curl 中存在信息泄露漏洞，可能导致敏感数据暴露...</p>
+        </div>
+        
+        <div class="footer">
+            <p>生成时间：2026-08-26 16:31:11 | AFVS vv2.6.0</p>
+            <p>注：此为简版报告，完整报告请使用 standard 或 detailed 模板</p>
+        </div>
+    </div>
+</body>
+</html>
