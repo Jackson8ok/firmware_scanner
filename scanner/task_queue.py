@@ -658,9 +658,13 @@ class ScanQueue:
                     if not sbom_record:
                         logger.warning(f"SBOM 记录不存在：{sbom_id}，跳过融合分析")
                     else:
-                        # 转换 SBOM 组件格式
+                        # 转换 SBOM 组件格式（修复双重反序列化问题 - v2.7.2-hotfix）
+                        # sbom_db.get() 返回时已反序列化 components 为 list，无需再次 json.loads
+                        comps_raw = sbom_record['components']
+                        sbom_components_list = comps_raw if isinstance(comps_raw, list) else json.loads(comps_raw)
+                        
                         sbom_components = []
-                        for comp in json.loads(sbom_record['components']):
+                        for comp in sbom_components_list:
                             sbom_components.append({
                                 'name': comp.get('name', ''),
                                 'version': comp.get('version', ''),

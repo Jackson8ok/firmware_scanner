@@ -3,7 +3,7 @@
 
 app:
   name: "玄武·AFVS"
-  version: "2.7.1"
+  version: "2.7.2"
   description: "Auto Firmware Vulnerability Scanner - 汽车固件漏洞扫描器"
 
 server:
